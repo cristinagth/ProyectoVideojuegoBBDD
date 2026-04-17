@@ -1,6 +1,7 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
+import java.net.URL;
 import java.util.List;
 import javax.swing.*;
 
@@ -14,8 +15,22 @@ public abstract class Chesspiece {
         this.row = row;
         this.col = col;
         this.isWhite = isWhite;
-        
-        this.image = new ImageIcon(getClass().getResource("figures/" + imageName)).getImage();// cargar la imagen desde la carpeta figures
+
+        this.image = new ImageIcon(getImageUrl(imageName)).getImage();// cargar la imagen desde la carpeta figures
+    }
+
+    private URL getImageUrl(String imageName) {
+        URL imageUrl = getClass().getResource("/figures/" + imageName);
+
+        if (imageUrl == null) {
+            imageUrl = getClass().getResource("/ProyectoVideojuegoBBDD/figures/" + imageName);
+        }
+
+        if (imageUrl == null) {
+            throw new IllegalArgumentException("No se encontro la imagen: " + imageName);
+        }
+
+        return imageUrl;
     }
 
     public void draw(Graphics g, int x, int y, int size) {

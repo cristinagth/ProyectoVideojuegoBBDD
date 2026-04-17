@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 public class Cell {
 

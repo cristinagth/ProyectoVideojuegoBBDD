@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;

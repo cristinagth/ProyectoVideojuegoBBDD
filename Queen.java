@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ public class Queen extends Chesspiece {
      * - Puede capturar la primera pieza rival que encuentre en cada dirección.
      *
      */
+    @Override
     public List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>();
 

@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -16,6 +16,7 @@ public class King extends Chesspiece {
      * - No incluye enroque ni validación de "no quedar en jaque".
      *
      */
+   @Override
    public  List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>();
 

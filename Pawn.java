@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ public class Pawn extends Chesspiece {
      * - Captura en diagonal 1 casilla si hay pieza rival.
      *
      */
+    @Override
     public List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>(); 
 
