@@ -13,6 +13,7 @@ public class CatHunterIntro extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.BLACK);
 
+        // Mostramos el jugador elegido antes de comenzar la partida.
         JLabel playerLabel = new JLabel("Jugador: " + playerName);
         playerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         playerLabel.setForeground(Color.WHITE);
@@ -38,6 +39,7 @@ public class CatHunterIntro extends JPanel {
         JButton startButton = new JButton("Comenzar");
         startButton.setFont(new Font("Arial", Font.BOLD, 20));
         startButton.addActionListener(e -> {
+            // Al hacer clic en Comenzar, se muestra el panel del juego.
             window.getContentPane().removeAll();
             window.add(new CatHunterBoard(CatHunterBoard.Difficulty.EASY, playerName), BorderLayout.CENTER);
             window.revalidate();

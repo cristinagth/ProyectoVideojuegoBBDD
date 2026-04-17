@@ -10,13 +10,14 @@ import javax.swing.*;
 
 public class Board extends JPanel {
     int columns = 8;
-    int rows = 8;
+    int rows = 8;    // Tamano del tablero en filas.
     int squareSize = 80;
     private List<Chesspiece> pieces;
     private Chesspiece selectedPiece;
     private List<Point> highlightedSquares = new ArrayList<>();
-    private boolean whiteShift = true;
-    private boolean firstMove = true;
+    // Agregamos el control de turnos con el primer movimiento.
+    private boolean whiteShift = true; // Se determina que empiezan las blancas.
+    private boolean firstMove = true; // Determinamos el primer movimiento.
     private final String whitePlayerName;
     private final String blackPlayerName;
 
@@ -28,7 +29,7 @@ public class Board extends JPanel {
         this.whitePlayerName = normalizePlayerName(whitePlayerName, "Jugador blancas");
         this.blackPlayerName = normalizePlayerName(blackPlayerName, "Jugador negras");
         pieces = new ArrayList<>();
-        initializePieces();
+        initializePieces(); // Movemos las piezas a un metodo para reiniciar el juego y no duplicar codigo.
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -38,7 +39,9 @@ public class Board extends JPanel {
         });
     }
 
+    // Metodo para reiniciar el juego o inicializar las piezas en su posicion inicial.
     private void initializePieces() {
+        // Piezas blancas.
         pieces.add(new Rook(7, 0, true));
         pieces.add(new Knight(7, 1, true));
         pieces.add(new Bishop(7, 2, true));
@@ -51,6 +54,7 @@ public class Board extends JPanel {
             pieces.add(new Pawn(6, i, true));
         }
 
+        // Piezas negras.
         pieces.add(new Rook(0, 0, false));
         pieces.add(new Knight(0, 1, false));
         pieces.add(new Bishop(0, 2, false));
@@ -64,6 +68,7 @@ public class Board extends JPanel {
         }
     }
 
+    // Para crear el mate, verificamos si la casilla del rey esta siendo atacada por una pieza rival.
     public boolean isSquareAttacked(int row, int col, boolean whiteAttacker) {
         for (Chesspiece p : pieces) {
             if (p.isWhite() == whiteAttacker) {
@@ -78,6 +83,7 @@ public class Board extends JPanel {
         return false;
     }
 
+    // Metodo para encontrar al rey de un color determinado.
     public Chesspiece findKing(boolean white) {
         for (Chesspiece p : pieces) {
             if (p instanceof King && p.isWhite() == white) {
@@ -87,6 +93,7 @@ public class Board extends JPanel {
         return null;
     }
 
+    // Verifica si el jugador del color actual esta en jaque mate.
     public boolean isCheckmate(boolean isWhiteTurn) {
         Chesspiece king = findKing(isWhiteTurn);
         if (king == null) {
@@ -97,6 +104,7 @@ public class Board extends JPanel {
             return false;
         }
 
+        // Comprobar el resto de fichas, por si se puede salvar al rey.
         List<Chesspiece> currentPlayerPieces = new ArrayList<>(pieces);
         for (Chesspiece p : currentPlayerPieces) {
             if (p.isWhite() == isWhiteTurn) {
@@ -104,7 +112,7 @@ public class Board extends JPanel {
                 int originalCol = p.getCol();
                 List<Point> moves = p.getLegalMoves(this);
 
-                for (Point move : moves) {
+                for (Point move : moves) { // Simulamos el movimiento.
                     Chesspiece target = getPieceAt(move.y, move.x);
                     if (target != null) {
                         pieces.remove(target);
@@ -127,6 +135,7 @@ public class Board extends JPanel {
         return true;
     }
 
+    // Devuelve la pieza situada en (row, col) o null si la casilla esta vacia.
     public Chesspiece getPieceAt(int row, int col) {
         for (Chesspiece p : pieces) {
             if (p.getRow() == row && p.getCol() == col) {
@@ -169,6 +178,7 @@ public class Board extends JPanel {
         highlightedSquares.clear();
     }
 
+    // Metodo para reiniciar el juego.
     private void resetGame() {
         pieces.clear();
         initializePieces();
@@ -181,10 +191,12 @@ public class Board extends JPanel {
         JOptionPane.showMessageDialog(this, "El juego ha sido reiniciado.");
     }
 
+    // Manejo de clicks del raton.
     private void handleClick(int mouseX, int mouseY) {
         int xOffset = getXOffset();
         int yOffset = getYOffset();
 
+        // Si click fuera del tablero, limpiar seleccion.
         if (mouseX < xOffset || mouseY < yOffset
                 || mouseX >= xOffset + getBoardWidthPx()
                 || mouseY >= yOffset + getBoardHeightPx()) {
@@ -196,9 +208,11 @@ public class Board extends JPanel {
         int row = (mouseY - yOffset) / squareSize;
 
         Chesspiece clicked = getPieceAt(row, col);
+        // Si tenemos una pieza seleccionada, intentamos moverla.
         if (selectedPiece != null && isHighlightedSquare(row, col)) {
             Chesspiece target = getPieceAt(row, col);
 
+            // Gestion de capturas.
             if (target != null && target.isWhite() != selectedPiece.isWhite()) {
                 if (target instanceof King) {
                     String winner = selectedPiece.isWhite() ? whitePlayerName : blackPlayerName;
@@ -212,8 +226,9 @@ public class Board extends JPanel {
 
             selectedPiece.setPosition(row, col);
             firstMove = false;
-            whiteShift = !whiteShift;
+            whiteShift = !whiteShift; // Cambio de turno.
 
+            // Estado de mate o jaque.
             if (isCheckmate(whiteShift)) {
                 repaint();
                 String winner = (!whiteShift) ? whitePlayerName : blackPlayerName;
@@ -237,6 +252,7 @@ public class Board extends JPanel {
             return;
         }
 
+        // Seleccionamos piezas y verificamos que sea el turno correcto.
         if (clicked != null && clicked.isWhite() == whiteShift) {
             selectedPiece = clicked;
             highlightedSquares = clicked.getLegalMoves(this);
@@ -254,6 +270,7 @@ public class Board extends JPanel {
             return;
         }
 
+        // Seleccionamos las piezas para calcular sus movimientos legales.
         if (clicked instanceof Pawn) {
             Pawn pawn = (Pawn) clicked;
             selectedPiece = pawn;
@@ -285,6 +302,7 @@ public class Board extends JPanel {
         repaint();
     }
 
+    // Verifica si la casilla (row, col) esta en las casillas resaltadas.
     private boolean isHighlightedSquare(int row, int col) {
         for (Point p : highlightedSquares) {
             if (p.x == col && p.y == row) {
@@ -302,7 +320,7 @@ public class Board extends JPanel {
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
+    protected void paintComponent(Graphics g) { // Dibuja el tablero y las piezas.
         super.paintComponent(g);
         int boardWidth = columns * squareSize;
         int boardHeight = rows * squareSize;
@@ -310,6 +328,7 @@ public class Board extends JPanel {
         int yOffset = (getHeight() - boardHeight) / 2;
         String letters = "ABCDEFGH";
 
+        // Dibujar el tablero.
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < columns; col++) {
                 if ((row + col) % 2 == 0) {
@@ -321,7 +340,7 @@ public class Board extends JPanel {
             }
         }
 
-        if (!highlightedSquares.isEmpty()) {
+        if (!highlightedSquares.isEmpty()) { // Resaltar casillas legales.
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setColor(new Color(0, 255, 0, 130));
 
@@ -342,18 +361,21 @@ public class Board extends JPanel {
         }
 
         g.setFont(new Font("Arial", Font.PLAIN, 16));
+        // Letras superiores e inferiores.
         for (int i = 0; i < columns; i++) {
             g.setColor(Color.BLACK);
             g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * squareSize + squareSize / 2 - 5, yOffset - 10);
             g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * squareSize + squareSize / 2 - 5, yOffset + boardHeight + 20);
         }
 
+        // Numeros laterales.
         for (int i = 0; i < rows; i++) {
             g.setColor(Color.BLACK);
             g.drawString(String.valueOf(8 - i), xOffset - 20, yOffset + i * squareSize + squareSize / 2 + 5);
             g.drawString(String.valueOf(8 - i), xOffset + boardWidth + 10, yOffset + i * squareSize + squareSize / 2 + 5);
         }
 
+        // Dibujar las piezas.
         for (Chesspiece piece : pieces) {
             int px = xOffset + piece.getCol() * squareSize;
             int py = yOffset + piece.getRow() * squareSize;

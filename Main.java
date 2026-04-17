@@ -16,7 +16,7 @@ public class Main {
         window.setVisible(true);
     }
 
-    private static JButton createButton(String text) {
+    private static JButton createButton(String text) { // Metodo para crear botones con estilo uniforme
         JButton button = new JButton(text);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         button.setFont(new Font("Arial", Font.BOLD, 22));
@@ -28,6 +28,7 @@ public class Main {
     }
 
     private static String requestPlayerName(Component parent, String message, String defaultName) {
+        // Si el usuario cancela, devolvemos null para quedarnos en el menu.
         String input = JOptionPane.showInputDialog(parent, message, defaultName);
 
         if (input == null) {
@@ -39,6 +40,7 @@ public class Main {
     }
 
     private static void showMenu(JFrame window) {
+        // Panel para el menu principal.
         JPanel menuPanel = new JPanel();
         menuPanel.setBackground(new Color(30, 30, 30));
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
@@ -48,6 +50,7 @@ public class Main {
         title.setFont(new Font("Arial", Font.BOLD, 36));
         title.setForeground(Color.WHITE);
 
+        // Crear botones para los juegos.
         JButton chessButton = createButton("Ajedrez");
         JButton catHunterButton = createButton("Buscagatos");
         JButton exitButton = createButton("Salir");
@@ -64,6 +67,7 @@ public class Main {
         window.add(menuPanel, BorderLayout.CENTER);
 
         chessButton.addActionListener(e -> {
+            // Al hacer clic en Ajedrez, se piden dos jugadores antes de mostrar el tablero.
             String whitePlayer = requestPlayerName(window, "Introduce el nombre del jugador de blancas:", "Jugador blancas");
             if (whitePlayer == null) {
                 return;
@@ -81,6 +85,7 @@ public class Main {
         });
 
         catHunterButton.addActionListener(e -> {
+            // Al hacer clic en Buscagatos, se pide un unico jugador antes de la introduccion.
             String playerName = requestPlayerName(window, "Introduce el nombre del jugador:", "Jugador");
             if (playerName == null) {
                 return;
@@ -92,6 +97,6 @@ public class Main {
             window.repaint();
         });
 
-        exitButton.addActionListener(e -> System.exit(0));
+        exitButton.addActionListener(e -> System.exit(0)); // Al hacer clic en Salir, se cierra la aplicacion.
     }
 }
