@@ -24,6 +24,7 @@ public class CatHunterBoard extends JPanel {
         }
     }
 
+    private final JFrame window;
     private final String playerName;
     private int rows, cols, mines;
     private Cell[][] grid;
@@ -32,14 +33,20 @@ public class CatHunterBoard extends JPanel {
     private boolean gameOver = false; // Variable para controlar si el juego ha terminado.
     private int flagsUsed = 0;
     private JButton resetButton;
+    private JButton menuButton;
     private JLabel infoLabel;
     private int topOffset = 40;
 
     public CatHunterBoard(Difficulty difficulty) {
-        this(difficulty, "Jugador");
+        this(null, difficulty, "Jugador");
     }
 
     public CatHunterBoard(Difficulty difficulty, String playerName) {
+        this(null, difficulty, playerName);
+    }
+
+    public CatHunterBoard(JFrame window, Difficulty difficulty, String playerName) {
+        this.window = window;
         this.playerName = normalizePlayerName(playerName);
         // Configuracion segun dificultad.
         this.rows = difficulty.rows;
@@ -212,9 +219,12 @@ public class CatHunterBoard extends JPanel {
 
         resetButton = new JButton("Reiniciar");
         resetButton.addActionListener(e -> resetGame());
+        menuButton = new JButton("Volver al menu");
+        menuButton.addActionListener(e -> returnToMenu());
 
         top.add(infoLabel);
         top.add(resetButton);
+        top.add(menuButton);
 
         updateInfo();
 
@@ -232,6 +242,17 @@ public class CatHunterBoard extends JPanel {
         }
 
         return name.trim();
+    }
+
+    private void returnToMenu() {
+        if (window == null) {
+            return;
+        }
+
+        window.getContentPane().removeAll();
+        Main.showMenu(window);
+        window.revalidate();
+        window.repaint();
     }
 
     @Override

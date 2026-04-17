@@ -41,7 +41,7 @@ public class CatHunterIntro extends JPanel {
         startButton.addActionListener(e -> {
             // Al hacer clic en Comenzar, se muestra el panel del juego.
             window.getContentPane().removeAll();
-            window.add(new CatHunterBoard(CatHunterBoard.Difficulty.EASY, playerName), BorderLayout.CENTER);
+            window.add(new CatHunterBoard(window, CatHunterBoard.Difficulty.EASY, playerName), BorderLayout.CENTER);
             window.revalidate();
             window.repaint();
         });

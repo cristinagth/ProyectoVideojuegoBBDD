@@ -12,24 +12,33 @@ public class Board extends JPanel {
     int columns = 8;
     int rows = 8;    // Tamano del tablero en filas.
     int squareSize = 80;
+    private final int topPanelHeight = 55;
     private List<Chesspiece> pieces;
     private Chesspiece selectedPiece;
     private List<Point> highlightedSquares = new ArrayList<>();
     // Agregamos el control de turnos con el primer movimiento.
     private boolean whiteShift = true; // Se determina que empiezan las blancas.
     private boolean firstMove = true; // Determinamos el primer movimiento.
+    private final JFrame window;
     private final String whitePlayerName;
     private final String blackPlayerName;
 
     public Board() {
-        this("Jugador blancas", "Jugador negras");
+        this(null, "Jugador blancas", "Jugador negras");
     }
 
     public Board(String whitePlayerName, String blackPlayerName) {
+        this(null, whitePlayerName, blackPlayerName);
+    }
+
+    public Board(JFrame window, String whitePlayerName, String blackPlayerName) {
+        this.window = window;
         this.whitePlayerName = normalizePlayerName(whitePlayerName, "Jugador blancas");
         this.blackPlayerName = normalizePlayerName(blackPlayerName, "Jugador negras");
+        setLayout(new BorderLayout());
         pieces = new ArrayList<>();
         initializePieces(); // Movemos las piezas a un metodo para reiniciar el juego y no duplicar codigo.
+        add(createTopPanel(), BorderLayout.NORTH);
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -170,7 +179,8 @@ public class Board extends JPanel {
     }
 
     private int getYOffset() {
-        return (getHeight() - getBoardHeightPx()) / 2;
+        int availableHeight = getHeight() - topPanelHeight;
+        return topPanelHeight + Math.max(0, (availableHeight - getBoardHeightPx()) / 2);
     }
 
     private void clearSelection() {
@@ -319,13 +329,40 @@ public class Board extends JPanel {
         return playerName.trim();
     }
 
+    private JPanel createTopPanel() {
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 8));
+        topPanel.setBackground(Color.DARK_GRAY);
+
+        JLabel playersLabel = new JLabel("Blancas: " + whitePlayerName + " | Negras: " + blackPlayerName);
+        playersLabel.setForeground(Color.WHITE);
+        playersLabel.setFont(new Font("Arial", Font.BOLD, 16));
+
+        JButton menuButton = new JButton("Volver al menu");
+        menuButton.addActionListener(e -> returnToMenu());
+
+        topPanel.add(playersLabel);
+        topPanel.add(menuButton);
+        return topPanel;
+    }
+
+    private void returnToMenu() {
+        if (window == null) {
+            return;
+        }
+
+        window.getContentPane().removeAll();
+        Main.showMenu(window);
+        window.revalidate();
+        window.repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) { // Dibuja el tablero y las piezas.
         super.paintComponent(g);
         int boardWidth = columns * squareSize;
         int boardHeight = rows * squareSize;
         int xOffset = (getWidth() - boardWidth) / 2;
-        int yOffset = (getHeight() - boardHeight) / 2;
+        int yOffset = getYOffset();
         String letters = "ABCDEFGH";
 
         // Dibujar el tablero.

@@ -39,7 +39,7 @@ public class Main {
         return trimmed.isEmpty() ? defaultName : trimmed;
     }
 
-    private static void showMenu(JFrame window) {
+    public static void showMenu(JFrame window) {
         // Panel para el menu principal.
         JPanel menuPanel = new JPanel();
         menuPanel.setBackground(new Color(30, 30, 30));
@@ -79,7 +79,7 @@ public class Main {
             }
 
             window.getContentPane().removeAll();
-            window.add(new Board(whitePlayer, blackPlayer), BorderLayout.CENTER);
+            window.add(new Board(window, whitePlayer, blackPlayer), BorderLayout.CENTER);
             window.revalidate();
             window.repaint();
         });
