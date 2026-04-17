@@ -79,7 +79,13 @@ public class Main {
             }
 
             window.getContentPane().removeAll();
-            window.add(new Board(window, whitePlayer, blackPlayer), BorderLayout.CENTER);
+            Board board = new Board(whitePlayer, blackPlayer);
+            showGame(
+                window,
+                board,
+                "Blancas: " + whitePlayer + " | Negras: " + blackPlayer,
+                board::resetGame
+            );
             window.revalidate();
             window.repaint();
         });
@@ -98,5 +104,63 @@ public class Main {
         });
 
         exitButton.addActionListener(e -> System.exit(0)); // Al hacer clic en Salir, se cierra la aplicacion.
+    }
+
+    public static void showGame(JFrame window, JPanel gamePanel) {
+        showGame(window, gamePanel, null, null);
+    }
+
+    public static void showGameWithoutMenuBar(JFrame window, JPanel gamePanel) {
+        window.getContentPane().removeAll();
+        window.add(gamePanel, BorderLayout.CENTER);
+        window.revalidate();
+        window.repaint();
+    }
+
+    public static void showGame(JFrame window, JPanel gamePanel, String infoText, Runnable resetAction) {
+        JPanel screen = new JPanel(new BorderLayout());
+        screen.add(createReturnPanel(window, infoText, resetAction), BorderLayout.NORTH);
+        screen.add(gamePanel, BorderLayout.CENTER);
+
+        window.getContentPane().removeAll();
+        window.add(screen, BorderLayout.CENTER);
+        window.revalidate();
+        window.repaint();
+    }
+
+    public static JButton createReturnButton(JFrame window) {
+        JButton returnButton = new JButton("Volver al menu");
+        returnButton.addActionListener(e -> {
+            window.getContentPane().removeAll();
+            showMenu(window);
+            window.revalidate();
+            window.repaint();
+        });
+
+        return returnButton;
+    }
+
+    private static JPanel createReturnPanel(JFrame window, String infoText, Runnable resetAction) {
+        JPanel topPanel = new JPanel(new BorderLayout(10, 5));
+        topPanel.setBackground(Color.DARK_GRAY);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+
+        JLabel infoLabel = new JLabel(infoText == null ? "" : infoText);
+        infoLabel.setForeground(Color.WHITE);
+        infoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        buttonPanel.setOpaque(false);
+
+        if (resetAction != null) {
+            JButton resetButton = new JButton("Reiniciar");
+            resetButton.addActionListener(e -> resetAction.run());
+            buttonPanel.add(resetButton);
+        }
+
+        buttonPanel.add(createReturnButton(window));
+        topPanel.add(infoLabel, BorderLayout.CENTER);
+        topPanel.add(buttonPanel, BorderLayout.EAST);
+        return topPanel;
     }
 }

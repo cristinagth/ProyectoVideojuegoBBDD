@@ -40,10 +40,8 @@ public class CatHunterIntro extends JPanel {
         startButton.setFont(new Font("Arial", Font.BOLD, 20));
         startButton.addActionListener(e -> {
             // Al hacer clic en Comenzar, se muestra el panel del juego.
-            window.getContentPane().removeAll();
-            window.add(new CatHunterBoard(window, CatHunterBoard.Difficulty.EASY, playerName), BorderLayout.CENTER);
-            window.revalidate();
-            window.repaint();
+            CatHunterBoard board = new CatHunterBoard(CatHunterBoard.Difficulty.EASY, playerName, Main.createReturnButton(window));
+            Main.showGameWithoutMenuBar(window, board);
         });
 
         JPanel bottom = new JPanel();

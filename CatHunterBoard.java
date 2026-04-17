@@ -24,7 +24,6 @@ public class CatHunterBoard extends JPanel {
         }
     }
 
-    private final JFrame window;
     private final String playerName;
     private int rows, cols, mines;
     private Cell[][] grid;
@@ -38,15 +37,15 @@ public class CatHunterBoard extends JPanel {
     private int topOffset = 40;
 
     public CatHunterBoard(Difficulty difficulty) {
-        this(null, difficulty, "Jugador");
+        this(difficulty, "Jugador");
     }
 
     public CatHunterBoard(Difficulty difficulty, String playerName) {
-        this(null, difficulty, playerName);
+        this(difficulty, playerName, null);
     }
 
-    public CatHunterBoard(JFrame window, Difficulty difficulty, String playerName) {
-        this.window = window;
+    public CatHunterBoard(Difficulty difficulty, String playerName, JButton menuButton) {
+        this.menuButton = menuButton;
         this.playerName = normalizePlayerName(playerName);
         // Configuracion segun dificultad.
         this.rows = difficulty.rows;
@@ -209,9 +208,9 @@ public class CatHunterBoard extends JPanel {
     }
 
     private JPanel createTopPanel() { // Crea el panel superior con informacion del juego y boton de reinicio.
-        JPanel top = new JPanel();
-        top.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+        JPanel top = new JPanel(new BorderLayout(10, 5));
         top.setBackground(Color.DARK_GRAY);
+        top.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
 
         infoLabel = new JLabel();
         infoLabel.setForeground(Color.WHITE);
@@ -219,12 +218,16 @@ public class CatHunterBoard extends JPanel {
 
         resetButton = new JButton("Reiniciar");
         resetButton.addActionListener(e -> resetGame());
-        menuButton = new JButton("Volver al menu");
-        menuButton.addActionListener(e -> returnToMenu());
 
-        top.add(infoLabel);
-        top.add(resetButton);
-        top.add(menuButton);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(resetButton);
+        if (menuButton != null) {
+            buttonPanel.add(menuButton);
+        }
+
+        top.add(infoLabel, BorderLayout.CENTER);
+        top.add(buttonPanel, BorderLayout.EAST);
 
         updateInfo();
 
@@ -242,17 +245,6 @@ public class CatHunterBoard extends JPanel {
         }
 
         return name.trim();
-    }
-
-    private void returnToMenu() {
-        if (window == null) {
-            return;
-        }
-
-        window.getContentPane().removeAll();
-        Main.showMenu(window);
-        window.revalidate();
-        window.repaint();
     }
 
     @Override
