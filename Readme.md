@@ -90,22 +90,27 @@ ProyectoVideojuego/
 └── Readme.md
 ```
 
-> Importante: las imágenes se cargan con `getResource("figures/...")`, así que la carpeta `figures/` debe estar dentro del **mismo paquete** y disponible en el **classpath**.
+> Importante: las imágenes se cargan desde `figures/`, así que la carpeta debe estar disponible en el **classpath** al ejecutar la aplicación.
 
 ---
 
 ## ¿Cómo ejecutar?
 
 **Windows (PowerShell / CMD):**
-1. Desde la carpeta raíz del proyecto:
-   - `javac ProyectoVideojuego\*.java`
+1. Desde la carpeta raíz del proyecto (`ProyectoVideojuegoBBDD`):
+   - `javac -d . *.java`
 2. Ejecuta:
-   - `java ProyectoVideojuego.Main`
-3. ¡Disfruta de tu partida de ajedrez!
+   - `java ProyectoVideojuegoBBDD.Main`
+3. Si estás situado una carpeta por encima del proyecto, por ejemplo en `D:\ProyectoBBDD`, usa:
+   - `javac -d . ProyectoVideojuegoBBDD\*.java`
+   - `java ProyectoVideojuegoBBDD.Main`
+4. ¡Disfruta de tu partida de ajedrez!
 
 **macOS / Linux:**
-1. `javac ProyectoVideojuego/*.java`
-2. `java ProyectoVideojuego.Main`
+1. Desde la carpeta raíz del proyecto:
+   - `javac -d . *.java`
+2. Ejecuta:
+   - `java ProyectoVideojuegoBBDD.Main`
 3. ¡Disfruta de tu partida de ajedrez!
 
 ---

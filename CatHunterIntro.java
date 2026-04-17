@@ -27,13 +27,17 @@ public class CatHunterIntro extends JPanel {
         text.setForeground(Color.WHITE);
         text.setFont(new Font("Serif", Font.PLAIN, 18));
         text.setText(
-            "No estas solo.\n\n" +
-            "Cada casilla que abras...\n" +
-            "ellos tambien avanzan.\n\n" +
-            "No puedes verlos,\n" +
-            "pero ellos si pueden verte.\n\n" +
-            "Y cuando el tiempo se agote...\n\n" +
-            "ya sera demasiado tarde."
+            """
+            No estas solo.
+            Cada casilla que abras...
+            ellos tambien avanzan.
+
+            No puedes verlos,
+            pero ellos si pueden verte.
+
+            Y cuando el tiempo se agote...
+
+            ya sera demasiado tarde."""
         );
 
         JButton startButton = new JButton("Comenzar");
