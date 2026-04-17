@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import javax.swing.*;
@@ -6,9 +6,18 @@ import javax.swing.*;
 public class CatHunterIntro extends JPanel {
 
     public CatHunterIntro(JFrame window) {
+        this(window, "Jugador");
+    }
 
+    public CatHunterIntro(JFrame window, String playerName) {
         setLayout(new BorderLayout());
         setBackground(Color.BLACK);
+
+        // Mostramos el jugador elegido antes de comenzar la partida.
+        JLabel playerLabel = new JLabel("Jugador: " + playerName);
+        playerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        playerLabel.setForeground(Color.WHITE);
+        playerLabel.setFont(new Font("Arial", Font.BOLD, 18));
 
         JTextArea text = new JTextArea();
         text.setEditable(false);
@@ -17,33 +26,34 @@ public class CatHunterIntro extends JPanel {
         text.setBackground(Color.BLACK);
         text.setForeground(Color.WHITE);
         text.setFont(new Font("Serif", Font.PLAIN, 18));
-
         text.setText(
-            "No estás solo.\n\n" +
-            "Cada casilla que abras...\n" +
-            "ellos también avanzan.\n\n" +
-            "No puedes verlos,\n" +
-            "pero ellos sí pueden verte.\n\n" +
-            "Y cuando el tiempo se agote...\n\n" +
-            "ya será demasiado tarde."
+            """
+            No estas solo.
+            Cada casilla que abras...
+            ellos tambien avanzan.
+
+            No puedes verlos,
+            pero ellos si pueden verte.
+
+            Y cuando el tiempo se agote...
+
+            ya sera demasiado tarde."""
         );
 
         JButton startButton = new JButton("Comenzar");
         startButton.setFont(new Font("Arial", Font.BOLD, 20));
-
         startButton.addActionListener(e -> {
-            window.getContentPane().removeAll();
-            window.add(new CatHunterBoard(CatHunterBoard.Difficulty.EASY), BorderLayout.CENTER);
-            window.revalidate();
-            window.repaint();
+            // Al hacer clic en Comenzar, se muestra el panel del juego.
+            CatHunterBoard board = new CatHunterBoard(CatHunterBoard.Difficulty.EASY, playerName, Main.createReturnButton(window));
+            Main.showGameWithoutMenuBar(window, board);
         });
-
-        add(text, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel();
         bottom.setBackground(Color.BLACK);
         bottom.add(startButton);
 
+        add(playerLabel, BorderLayout.NORTH);
+        add(text, BorderLayout.CENTER);
         add(bottom, BorderLayout.SOUTH);
     }
 }

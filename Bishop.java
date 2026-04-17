@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ public class Bishop extends Chesspiece {
          * - No puede saltar piezas.
          * - Puede capturar la primera pieza rival que encuentre en una dirección diagonal.
          */
-
+    @Override
     public List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>();
 

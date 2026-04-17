@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -15,6 +15,7 @@ public class Knight extends Chesspiece {
      * - Puede capturar una pieza rival en la casilla destino.
      *
      */
+    @Override
     public List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>();
 

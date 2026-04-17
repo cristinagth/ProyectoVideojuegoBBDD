@@ -1,4 +1,4 @@
-package ProyectoVideojuego;
+package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -16,6 +16,7 @@ public class Rook extends Chesspiece {
      * - Puede capturar la primera pieza rival que encuentre en una dirección.
      *
      */
+    @Override
     public List<Point> getLegalMoves(Board board) {
         List<Point> moves = new ArrayList<>();
 
