@@ -1,2 +1,30 @@
-# Ignorar archivos compilados de Java
+# Compilados de Java
 *.class
+ProyectoVideojuegoBBDD/
+out/
+bin/
+build/
+target/
+
+# Base de datos local
+data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Dependencias descargadas localmente
+lib/
+*.jar
+
+# Logs
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
