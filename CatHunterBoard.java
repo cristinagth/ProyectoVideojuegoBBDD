@@ -1,9 +1,13 @@
 package ProyectoVideojuegoBBDD;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URL;
 import java.util.Random;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public class CatHunterBoard extends JPanel {
@@ -35,6 +39,8 @@ public class CatHunterBoard extends JPanel {
     private JButton menuButton;
     private JLabel infoLabel;
     private int topOffset = 40;
+    private final BufferedImage catImage;
+    private final BufferedImage yarnImage;
 
     public CatHunterBoard(Difficulty difficulty) {
         this(difficulty, "Jugador");
@@ -47,6 +53,8 @@ public class CatHunterBoard extends JPanel {
     public CatHunterBoard(Difficulty difficulty, String playerName, JButton menuButton) {
         this.menuButton = menuButton;
         this.playerName = normalizePlayerName(playerName);
+        this.catImage = loadImage("gato.png");
+        this.yarnImage = loadImage("Ovillo.png");
         // Configuracion segun dificultad.
         this.rows = difficulty.rows;
         this.cols = difficulty.cols;
@@ -247,6 +255,28 @@ public class CatHunterBoard extends JPanel {
         return name.trim();
     }
 
+    private URL getImageUrl(String imageName) {
+        URL imageUrl = getClass().getResource("/figuresCatHunter/" + imageName);
+
+        if (imageUrl == null) {
+            imageUrl = getClass().getResource("/ProyectoVideojuegoBBDD/figuresCatHunter/" + imageName);
+        }
+
+        if (imageUrl == null) {
+            throw new IllegalArgumentException("No se encontro la imagen de CatHunter: " + imageName);
+        }
+
+        return imageUrl;
+    }
+
+    private BufferedImage loadImage(String imageName) {
+        try {
+            return ImageIO.read(getImageUrl(imageName));
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("No se pudo cargar la imagen de CatHunter: " + imageName, exception);
+        }
+    }
+
     @Override
     protected void paintComponent(Graphics g) { // Metodo para dibujar el tablero y las celdas.
         super.paintComponent(g);
@@ -263,16 +293,14 @@ public class CatHunterBoard extends JPanel {
                     g.fillRect(x, y, cellSize, cellSize);
 
                     if (cell.isFlagged()) { // Si tiene bandera, se dibuja una F roja.
-                        g.setColor(Color.RED);
-                        g.drawString("F", x + 10, y + 20);
+                        g.drawImage(yarnImage, x + 4, y + 4, cellSize - 8, cellSize - 8, null);
                     }
                 } else {
                     g.setColor(Color.LIGHT_GRAY);
                     g.fillRect(x, y, cellSize, cellSize);
 
                     if (cell.hasMine()) { // Si tiene mina, se dibuja un circulo.
-                        g.setColor(Color.BLACK);
-                        g.fillOval(x + 5, y + 5, 20, 20);
+                        g.drawImage(catImage, x + 4, y + 4, cellSize - 8, cellSize - 8, null);
                     } else if (cell.getAdjacentMines() > 0) { // Si no tiene mina, se dibuja el numero.
                         g.setColor(Color.BLUE);
                         g.drawString(String.valueOf(cell.getAdjacentMines()), x + 10, y + 20);
