@@ -1,41 +1,75 @@
 # Base de datos SQLite para ProyectoVideojuegoBBDD
 
-## Que incluye esta infraestructura
+## Objetivo
 
-- Inicializacion automatica de SQLite al arrancar la aplicacion.
-- Tabla `jugador` para perfiles locales.
-- Tabla `configuracion` para futuras preferencias.
-- Tabla `partida_cathunter` preparada para resultados de Buscagatos.
-- Tabla `partida_ajedrez` preparada para resultados de Ajedrez.
+Este documento explica, paso a paso, como ejecutar el proyecto con la infraestructura de base de datos SQLite.
+Esta guia esta pensada para alguien que va a arrancar el programa por primera vez.
 
-## Archivo de base de datos
+## Donde se crea la base de datos
 
-La aplicacion intentara crear el fichero:
+Cuando la aplicacion arranca correctamente con SQLite, intentara crear este fichero:
 
-`data/proyecto_videojuego.db`
+```text
+data/proyecto_videojuego.db
+```
 
-## Driver necesario
+## Requisitos previos
 
-Para que SQLite funcione en tiempo de ejecucion necesitas anadir el driver JDBC de SQLite al classpath.
+Antes de ejecutar el proyecto necesitas:
 
-Puedes descargar `sqlite-jdbc` y colocarlo en una carpeta local `lib/`.
+- Tener Java instalado.
+- Abrir una terminal PowerShell.
+- Situarte en la raiz del proyecto.
 
-Ejemplo:
+La raiz del proyecto, será similar a:
+
+```powershell
+D:\ProyectoBBDD\ProyectoVideojuegoBBDD
+```
+
+## Paso 1. Descargar el driver JDBC de SQLite
+
+Desde la raiz del proyecto, ejecuta:
 
 ```powershell
 mkdir lib
 Invoke-WebRequest -Uri "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.51.2.0/sqlite-jdbc-3.51.2.0.jar" -OutFile "lib\sqlite-jdbc-3.51.2.0.jar"
 ```
 
-## Compilar y ejecutar con SQLite
+Al terminar, deberias tener este fichero:
 
-Desde la raiz del proyecto:
+```text
+lib/sqlite-jdbc-3.51.2.0.jar
+```
+
+## Paso 2. Compilar el proyecto
+
+Desde la misma carpeta raiz del proyecto, compila asi:
 
 ```powershell
 javac -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" -d . *.java
+```
+
+### Que hace este comando
+
+- `-cp` anade el driver SQLite al classpath.
+- `-d .` genera las clases compiladas respetando el paquete Java actual.
+- `*.java` compila todos los archivos fuente del proyecto.
+
+## Paso 3. Ejecutar el programa
+
+```powershell
 java -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" ProyectoVideojuegoBBDD.Main
 ```
 
-## Nota
+## Sinopsis
 
-Este commit solo prepara la infraestructura de base de datos. El guardado real de partidas se anadira en commits separados.
+Si quieres la secuencia minima correcta para una primera ejecucion con BBDD:
+
+```powershell
+cd D:\ProyectoBBDD\ProyectoVideojuegoBBDD
+mkdir lib
+Invoke-WebRequest -Uri "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.51.2.0/sqlite-jdbc-3.51.2.0.jar" -OutFile "lib\sqlite-jdbc-3.51.2.0.jar"
+javac -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" -d . *.java
+java -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" ProyectoVideojuegoBBDD.Main
+```
