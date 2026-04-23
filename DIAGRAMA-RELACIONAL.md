@@ -45,8 +45,6 @@ erDiagram
     JUGADOR ||--o{ PARTIDA_AJEDREZ : negras
 ```
 
-## Explicacion breve
-
 - `jugador` almacena los perfiles de jugadores.
 - `configuracion` guarda pares simples `clave -> valor` para ajustes globales.
 - `partida_cathunter` guarda partidas de Buscagatos y referencia a un jugador.
@@ -58,4 +56,9 @@ erDiagram
 - `partida_ajedrez` tiene dos claves foraneas hacia `jugador`:
   - una para el jugador de blancas
   - otra para el jugador de negras
-- El campo `estado_tablero` se guarda como `TEXT` para permitir una serializacion sencilla del estado del juego.
+    - `estado_tablero` guarda una representacion completa del tablero en una sola cadena de texto.
+    Esto permite almacenar y recuperar una partida sin crear una tabla adicional por cada casilla o pieza.
+    Es una solucion simple y adecuada para esta fase del proyecto.
+    Por ejemplo para buscagatos 1 si tiene mina o 0 si no , 1 si está revelada o 0 si no, 1 si tiene bandera o 0 si no
+    y número de minas adyacentes pareciendose a algo tal que asi 0000(minas),0011(revelada),1010(bandera),0003(minas adyacentes)
+
