@@ -1,75 +1,48 @@
-# Base de datos SQLite para ProyectoVideojuegoBBDD
+# Base de datos del proyecto
 
-## Objetivo
+## Estado actual
 
-Este documento explica, paso a paso, como ejecutar el proyecto con la infraestructura de base de datos SQLite.
-Esta guia esta pensada para alguien que va a arrancar el programa por primera vez.
+La aplicacion usa **Azure SQL Database** como base de datos online.
 
-## Donde se crea la base de datos
+SQLite fue usado como primera aproximacion local, pero ya no es el modo activo del proyecto.
 
-Cuando la aplicacion arranca correctamente con SQLite, intentara crear este fichero:
+## Guia principal
 
-```text
-data/proyecto_videojuego.db
-```
-
-## Requisitos previos
-
-Antes de ejecutar el proyecto necesitas:
-
-- Tener Java instalado.
-- Abrir una terminal PowerShell.
-- Situarte en la raiz del proyecto.
-
-La raiz del proyecto, será similar a:
-
-```powershell
-D:\ProyectoBBDD\ProyectoVideojuegoBBDD
-```
-
-## Paso 1. Descargar el driver JDBC de SQLite
-
-Desde la raiz del proyecto, ejecuta:
-
-```powershell
-mkdir lib
-Invoke-WebRequest -Uri "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.51.2.0/sqlite-jdbc-3.51.2.0.jar" -OutFile "lib\sqlite-jdbc-3.51.2.0.jar"
-```
-
-Al terminar, deberias tener este fichero:
+La configuracion actual esta documentada en:
 
 ```text
-lib/sqlite-jdbc-3.51.2.0.jar
+README-AZURE.md
 ```
 
-## Paso 2. Compilar el proyecto
+Ese archivo incluye:
 
-Desde la misma carpeta raiz del proyecto, compila asi:
+- Recurso creado en Azure.
+- Servidor y base de datos.
+- Driver JDBC necesario.
+- Variables de entorno.
+- Comandos de compilacion y ejecucion.
+
+## Resumen de ejecucion
+
+Desde la raiz del proyecto:
 
 ```powershell
-javac -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" -d . *.java
+$env:AZURE_SQL_PASSWORD="tu-contrasena"
+javac -cp ".;lib\mssql-jdbc-13.4.0.jre11.jar" -d . *.java
+java -cp ".;lib\mssql-jdbc-13.4.0.jre11.jar" ProyectoVideojuegoBBDD.Main
 ```
 
-### Que hace este comando
+## Esquema
 
-- `-cp` anade el driver SQLite al classpath.
-- `-d .` genera las clases compiladas respetando el paquete Java actual.
-- `*.java` compila todos los archivos fuente del proyecto.
+El esquema compatible con Azure SQL esta en:
 
-## Paso 3. Ejecutar el programa
-
-```powershell
-java -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" ProyectoVideojuegoBBDD.Main
+```text
+schema-azure.sql
 ```
 
-## Sinopsis
+Tablas principales:
 
-Si quieres la secuencia minima correcta para una primera ejecucion con BBDD:
-
-```powershell
-cd D:\ProyectoBBDD\ProyectoVideojuegoBBDD
-mkdir lib
-Invoke-WebRequest -Uri "https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.51.2.0/sqlite-jdbc-3.51.2.0.jar" -OutFile "lib\sqlite-jdbc-3.51.2.0.jar"
-javac -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" -d . *.java
-java -cp ".;lib\sqlite-jdbc-3.51.2.0.jar" ProyectoVideojuegoBBDD.Main
-```
+- `jugador`
+- `configuracion`
+- `partida_cathunter`
+- `partida_ajedrez`
