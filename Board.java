@@ -18,8 +18,12 @@ public class Board extends JPanel {
     // Agregamos el control de turnos con el primer movimiento.
     private boolean whiteShift = true; // Se determina que empiezan las blancas.
     private boolean firstMove = true; // Determinamos el primer movimiento.
+    private boolean gameOver = false;
     private final String whitePlayerName;
     private final String blackPlayerName;
+    private String statusMessage = "";
+    private Color statusColor = new Color(30, 80, 130, 215);
+    private Timer statusTimer;
 
     public Board() {
         this("Jugador blancas", "Jugador negras");
@@ -72,6 +76,21 @@ public class Board extends JPanel {
     public boolean isSquareAttacked(int row, int col, boolean whiteAttacker) {
         for (Chesspiece p : pieces) {
             if (p.isWhite() == whiteAttacker) {
+                if (p instanceof King && Math.abs(p.getRow() - row) <= 1 && Math.abs(p.getCol() - col) <= 1) {
+                    return true;
+                }
+
+                if (p instanceof Pawn) {
+                    int direction = p.isWhite() ? -1 : 1;
+                    int attackRow = p.getRow() + direction;
+
+                    if (attackRow == row && (p.getCol() - 1 == col || p.getCol() + 1 == col)) {
+                        return true;
+                    }
+
+                    continue;
+                }
+
                 List<Point> moves = p.getLegalMoves(this);
                 for (Point move : moves) {
                     if (move.y == row && move.x == col) {
@@ -93,6 +112,45 @@ public class Board extends JPanel {
         return null;
     }
 
+    private List<Point> getLegalMovesForTurn(Chesspiece piece) {
+        List<Point> legalMoves = new ArrayList<>();
+
+        for (Point move : piece.getLegalMoves(this)) {
+            Chesspiece target = getPieceAt(move.y, move.x);
+
+            if (target instanceof King) {
+                continue;
+            }
+
+            if (!wouldLeaveKingInCheck(piece, move.y, move.x)) {
+                legalMoves.add(move);
+            }
+        }
+
+        return legalMoves;
+    }
+
+    private boolean wouldLeaveKingInCheck(Chesspiece piece, int targetRow, int targetCol) {
+        int originalRow = piece.getRow();
+        int originalCol = piece.getCol();
+        Chesspiece capturedPiece = getPieceAt(targetRow, targetCol);
+
+        if (capturedPiece != null) {
+            pieces.remove(capturedPiece);
+        }
+
+        piece.setPosition(targetRow, targetCol);
+        Chesspiece king = piece instanceof King ? piece : findKing(piece.isWhite());
+        boolean inCheck = king == null || isSquareAttacked(king.getRow(), king.getCol(), !piece.isWhite());
+
+        piece.setPosition(originalRow, originalCol);
+        if (capturedPiece != null) {
+            pieces.add(capturedPiece);
+        }
+
+        return inCheck;
+    }
+
     // Verifica si el jugador del color actual esta en jaque mate.
     public boolean isCheckmate(boolean isWhiteTurn) {
         Chesspiece king = findKing(isWhiteTurn);
@@ -107,29 +165,8 @@ public class Board extends JPanel {
         // Comprobar el resto de fichas, por si se puede salvar al rey.
         List<Chesspiece> currentPlayerPieces = new ArrayList<>(pieces);
         for (Chesspiece p : currentPlayerPieces) {
-            if (p.isWhite() == isWhiteTurn) {
-                int originalRow = p.getRow();
-                int originalCol = p.getCol();
-                List<Point> moves = p.getLegalMoves(this);
-
-                for (Point move : moves) { // Simulamos el movimiento.
-                    Chesspiece target = getPieceAt(move.y, move.x);
-                    if (target != null) {
-                        pieces.remove(target);
-                    }
-                    p.setPosition(move.y, move.x);
-
-                    boolean stillInCheck = isSquareAttacked(king.getRow(), king.getCol(), !isWhiteTurn);
-
-                    p.setPosition(originalRow, originalCol);
-                    if (target != null) {
-                        pieces.add(target);
-                    }
-
-                    if (!stillInCheck) {
-                        return false;
-                    }
-                }
+            if (p.isWhite() == isWhiteTurn && !getLegalMovesForTurn(p).isEmpty()) {
+                return false;
             }
         }
         return true;
@@ -184,15 +221,20 @@ public class Board extends JPanel {
         initializePieces();
         whiteShift = true;
         firstMove = true;
+        gameOver = false;
         selectedPiece = null;
         highlightedSquares.clear();
+        showStatus("Partida reiniciada. Empiezan las blancas: " + whitePlayerName, new Color(30, 90, 120, 215));
 
         repaint();
-        JOptionPane.showMessageDialog(this, "El juego ha sido reiniciado.");
     }
 
     // Manejo de clicks del raton.
     private void handleClick(int mouseX, int mouseY) {
+        if (gameOver) {
+            return;
+        }
+
         int xOffset = getXOffset();
         int yOffset = getYOffset();
 
@@ -214,17 +256,11 @@ public class Board extends JPanel {
 
             // Gestion de capturas.
             if (target != null && target.isWhite() != selectedPiece.isWhite()) {
-                if (target instanceof King) {
-                    String winner = selectedPiece.isWhite() ? whitePlayerName : blackPlayerName;
-                    repaint();
-                    JOptionPane.showConfirmDialog(this, "JAQUE MATE. Gana " + winner + ". Deseas reiniciar?", "Fin de la partida", JOptionPane.YES_NO_OPTION);
-                    resetGame();
-                    return;
-                }
                 pieces.remove(target);
             }
 
             selectedPiece.setPosition(row, col);
+            promotePawnIfNeeded(selectedPiece);
             firstMove = false;
             whiteShift = !whiteShift; // Cambio de turno.
 
@@ -238,12 +274,16 @@ public class Board extends JPanel {
 
                 if (response == JOptionPane.YES_OPTION) {
                     resetGame();
+                } else {
+                    gameOver = true;
+                    clearSelection();
+                    repaint();
                 }
             } else {
                 Chesspiece currentKing = findKing(whiteShift);
                 if (currentKing != null && isSquareAttacked(currentKing.getRow(), currentKing.getCol(), !whiteShift)) {
                     String playerInCheck = whiteShift ? whitePlayerName : blackPlayerName;
-                    JOptionPane.showMessageDialog(this, "Jaque. El rey de " + playerInCheck + " esta en peligro.");
+                    showStatus("Jaque. El rey de " + playerInCheck + " esta en peligro.", new Color(145, 65, 65, 220));
                 }
             }
 
@@ -255,10 +295,15 @@ public class Board extends JPanel {
         // Seleccionamos piezas y verificamos que sea el turno correcto.
         if (clicked != null && clicked.isWhite() == whiteShift) {
             selectedPiece = clicked;
-            highlightedSquares = clicked.getLegalMoves(this);
+            highlightedSquares = getLegalMovesForTurn(clicked);
+            if (highlightedSquares.isEmpty()) {
+                showStatus("Esa pieza no tiene movimientos legales.", new Color(80, 80, 80, 210));
+            }
+            repaint();
+            return;
         } else {
             if (firstMove && whiteShift && clicked != null && !clicked.isWhite()) {
-                JOptionPane.showMessageDialog(this, "Empiezan las blancas: " + whitePlayerName);
+                showStatus("Empiezan las blancas: " + whitePlayerName, new Color(30, 90, 120, 215));
             }
             clearSelection();
             repaint();
@@ -268,35 +313,6 @@ public class Board extends JPanel {
             clearSelection();
             repaint();
             return;
-        }
-
-        // Seleccionamos las piezas para calcular sus movimientos legales.
-        if (clicked instanceof Pawn) {
-            Pawn pawn = (Pawn) clicked;
-            selectedPiece = pawn;
-            highlightedSquares = pawn.getLegalMoves(this);
-        } else if (clicked instanceof Rook) {
-            Rook rook = (Rook) clicked;
-            selectedPiece = rook;
-            highlightedSquares = rook.getLegalMoves(this);
-        } else if (clicked instanceof Bishop) {
-            Bishop bishop = (Bishop) clicked;
-            selectedPiece = bishop;
-            highlightedSquares = bishop.getLegalMoves(this);
-        } else if (clicked instanceof Queen) {
-            Queen queen = (Queen) clicked;
-            selectedPiece = queen;
-            highlightedSquares = queen.getLegalMoves(this);
-        } else if (clicked instanceof Knight) {
-            Knight knight = (Knight) clicked;
-            selectedPiece = knight;
-            highlightedSquares = knight.getLegalMoves(this);
-        } else if (clicked instanceof King) {
-            King king = (King) clicked;
-            selectedPiece = king;
-            highlightedSquares = king.getLegalMoves(this);
-        } else {
-            clearSelection();
         }
 
         repaint();
@@ -310,6 +326,36 @@ public class Board extends JPanel {
             }
         }
         return false;
+    }
+
+    private void promotePawnIfNeeded(Chesspiece piece) {
+        if (!(piece instanceof Pawn)) {
+            return;
+        }
+
+        if ((piece.isWhite() && piece.getRow() == 0) || (!piece.isWhite() && piece.getRow() == rows - 1)) {
+            pieces.remove(piece);
+            pieces.add(new Queen(piece.getRow(), piece.getCol(), piece.isWhite()));
+            String player = piece.isWhite() ? whitePlayerName : blackPlayerName;
+            showStatus("Promocion. El peon de " + player + " se convierte en reina.", new Color(95, 85, 145, 220));
+        }
+    }
+
+    private void showStatus(String message, Color color) {
+        statusMessage = message;
+        statusColor = color;
+
+        if (statusTimer != null) {
+            statusTimer.stop();
+        }
+
+        statusTimer = new Timer(3500, e -> {
+            statusMessage = "";
+            repaint();
+        });
+        statusTimer.setRepeats(false);
+        statusTimer.start();
+        repaint();
     }
 
     private String normalizePlayerName(String playerName, String defaultName) {
@@ -342,11 +388,18 @@ public class Board extends JPanel {
 
         if (!highlightedSquares.isEmpty()) { // Resaltar casillas legales.
             Graphics2D g2 = (Graphics2D) g.create();
-            g2.setColor(new Color(0, 255, 0, 130));
 
             for (Point p : highlightedSquares) {
                 int hx = xOffset + p.x * squareSize;
                 int hy = yOffset + p.y * squareSize;
+                Chesspiece target = getPieceAt(p.y, p.x);
+
+                if (target != null && selectedPiece != null && target.isWhite() != selectedPiece.isWhite()) {
+                    g2.setColor(new Color(220, 40, 40, 150));
+                } else {
+                    g2.setColor(new Color(0, 255, 0, 130));
+                }
+
                 g2.fillRect(hx, hy, squareSize, squareSize);
             }
 
@@ -381,5 +434,37 @@ public class Board extends JPanel {
             int py = yOffset + piece.getRow() * squareSize;
             piece.draw(g, px, py, squareSize);
         }
+
+        drawStatusMessage(g, xOffset, yOffset, boardWidth);
+    }
+
+    private void drawStatusMessage(Graphics g, int xOffset, int yOffset, int boardWidth) {
+        if (statusMessage.isEmpty()) {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int bannerWidth = Math.min(boardWidth - 40, 560);
+        int bannerHeight = 46;
+        int x = xOffset + (boardWidth - bannerWidth) / 2;
+        int y = Math.max(12, yOffset - 64);
+
+        g2.setColor(new Color(0, 0, 0, 90));
+        g2.fillRoundRect(x + 4, y + 5, bannerWidth, bannerHeight, 16, 16);
+        g2.setColor(statusColor);
+        g2.fillRoundRect(x, y, bannerWidth, bannerHeight, 16, 16);
+        g2.setColor(new Color(240, 225, 170));
+        g2.drawRoundRect(x, y, bannerWidth, bannerHeight, 16, 16);
+
+        g2.setFont(new Font("Arial", Font.BOLD, 15));
+        g2.setColor(Color.WHITE);
+        FontMetrics metrics = g2.getFontMetrics();
+        int textX = x + (bannerWidth - metrics.stringWidth(statusMessage)) / 2;
+        int textY = y + ((bannerHeight - metrics.getHeight()) / 2) + metrics.getAscent();
+        g2.drawString(statusMessage, textX, textY);
+
+        g2.dispose();
     }
 }
