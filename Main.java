@@ -5,6 +5,13 @@ import javax.swing.*;
 
 public class Main {
 
+    private static final Color MENU_TOP = new Color(19, 27, 36);
+    private static final Color MENU_BOTTOM = new Color(42, 47, 58);
+    private static final Color MENU_ACCENT = new Color(232, 190, 96);
+    private static final Color BUTTON_PRIMARY = new Color(75, 113, 145);
+    private static final Color BUTTON_SECONDARY = new Color(86, 124, 94);
+    private static final Color BUTTON_EXIT = new Color(108, 73, 78);
+
     public static void main(String[] args) {
         DatabaseManager.initializeDatabase();
 
@@ -22,10 +29,13 @@ public class Main {
         JButton button = new JButton(text);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
         button.setFont(new Font("Arial", Font.BOLD, 22));
-        button.setMaximumSize(new Dimension(250, 50));
+        button.setMaximumSize(new Dimension(300, 56));
         button.setFocusPainted(false);
-        button.setBackground(new Color(70, 130, 180));
         button.setForeground(Color.WHITE);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 65), 1),
+            BorderFactory.createEmptyBorder(10, 18, 10, 18)
+        ));
         return button;
     }
 
@@ -43,28 +53,51 @@ public class Main {
 
     public static void showMenu(JFrame window) {
         // Panel para el menu principal.
-        JPanel menuPanel = new JPanel();
-        menuPanel.setBackground(new Color(30, 30, 30));
-        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+        JPanel menuPanel = new MainMenuPanel();
+        menuPanel.setLayout(new GridBagLayout());
 
         JLabel title = new JLabel("PROYECTO VIDEOJUEGO");
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setFont(new Font("Arial", Font.BOLD, 36));
-        title.setForeground(Color.WHITE);
+        title.setFont(new Font("Serif", Font.BOLD, 40));
+        title.setForeground(MENU_ACCENT);
+
+        JLabel hint = new JLabel("Elige una experiencia para comenzar");
+        hint.setAlignmentX(Component.CENTER_ALIGNMENT);
+        hint.setFont(new Font("Arial", Font.PLAIN, 14));
+        hint.setForeground(new Color(164, 178, 178));
 
         // Crear botones para los juegos.
         JButton chessButton = createButton("Ajedrez");
         JButton catHunterButton = createButton("Buscagatos");
         JButton exitButton = createButton("Salir");
+        chessButton.setBackground(BUTTON_PRIMARY);
+        catHunterButton.setBackground(BUTTON_SECONDARY);
+        exitButton.setBackground(BUTTON_EXIT);
 
-        menuPanel.add(Box.createVerticalStrut(120));
-        menuPanel.add(title);
-        menuPanel.add(Box.createVerticalStrut(80));
-        menuPanel.add(chessButton);
-        menuPanel.add(Box.createVerticalStrut(20));
-        menuPanel.add(catHunterButton);
-        menuPanel.add(Box.createVerticalStrut(20));
-        menuPanel.add(exitButton);
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBorder(BorderFactory.createEmptyBorder(42, 54, 44, 54));
+        content.setPreferredSize(new Dimension(660, 520));
+
+        content.add(title);
+        content.add(Box.createVerticalStrut(44));
+        content.add(hint);
+        content.add(Box.createVerticalStrut(24));
+        content.add(chessButton);
+        content.add(Box.createVerticalStrut(16));
+        content.add(catHunterButton);
+        content.add(Box.createVerticalStrut(16));
+        content.add(exitButton);
+
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        constraints.weightx = 1;
+        constraints.weighty = 1;
+        constraints.anchor = GridBagConstraints.CENTER;
+        constraints.insets = new Insets(24, 24, 24, 24);
+        menuPanel.add(content, constraints);
 
         window.add(menuPanel, BorderLayout.CENTER);
 
@@ -164,5 +197,65 @@ public class Main {
         topPanel.add(infoLabel, BorderLayout.CENTER);
         topPanel.add(buttonPanel, BorderLayout.EAST);
         return topPanel;
+    }
+
+    private static class MainMenuPanel extends JPanel {
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            GradientPaint background = new GradientPaint(0, 0, MENU_TOP, 0, getHeight(), MENU_BOTTOM);
+            g2.setPaint(background);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            paintBoardPattern(g2);
+            paintGameSymbols(g2);
+            paintCenterPanel(g2);
+
+            g2.dispose();
+        }
+
+        private void paintBoardPattern(Graphics2D g2) {
+            int size = 64;
+            for (int y = 0; y < getHeight(); y += size) {
+                for (int x = 0; x < getWidth(); x += size) {
+                    boolean alternate = ((x / size) + (y / size)) % 2 == 0;
+                    g2.setColor(alternate ? new Color(255, 255, 255, 10) : new Color(0, 0, 0, 14));
+                    g2.fillRect(x, y, size, size);
+                }
+            }
+        }
+
+        private void paintGameSymbols(Graphics2D g2) {
+            g2.setFont(new Font("Serif", Font.BOLD, 92));
+            g2.setColor(new Color(232, 190, 96, 48));
+            g2.drawString("♞", 86, 150);
+            g2.drawString("♛", getWidth() - 170, getHeight() - 84);
+
+            g2.setColor(new Color(155, 210, 170, 58));
+            g2.fillOval(getWidth() - 180, 86, 46, 18);
+            g2.fillOval(getWidth() - 98, 86, 46, 18);
+            g2.setColor(new Color(20, 28, 28, 190));
+            g2.fillOval(getWidth() - 160, 88, 8, 14);
+            g2.fillOval(getWidth() - 78, 88, 8, 14);
+        }
+
+        private void paintCenterPanel(Graphics2D g2) {
+            int panelWidth = 700;
+            int panelHeight = 560;
+            int x = (getWidth() - panelWidth) / 2;
+            int y = (getHeight() - panelHeight) / 2;
+
+            g2.setColor(new Color(0, 0, 0, 95));
+            g2.fillRoundRect(x - 16, y - 16, panelWidth + 32, panelHeight + 32, 24, 24);
+            g2.setColor(new Color(18, 27, 33, 220));
+            g2.fillRoundRect(x, y, panelWidth, panelHeight, 18, 18);
+            g2.setColor(new Color(255, 255, 255, 48));
+            g2.drawRoundRect(x, y, panelWidth, panelHeight, 18, 18);
+        }
     }
 }

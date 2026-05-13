@@ -12,6 +12,13 @@ import javax.swing.*;
 
 public class CatHunterBoard extends JPanel {
 
+    private static final Color HIDDEN_CELL_LIGHT = new Color(49, 67, 74);
+    private static final Color HIDDEN_CELL_DARK = new Color(42, 57, 64);
+    private static final Color REVEALED_CELL_LIGHT = new Color(215, 221, 217);
+    private static final Color REVEALED_CELL_DARK = new Color(201, 209, 205);
+    private static final Color CAT_CELL_BACKGROUND = new Color(222, 184, 184);
+    private static final Color GRID_COLOR = new Color(31, 42, 46);
+
     public enum Difficulty {
         EASY("Facil", 8, 8, 10, 10, 60),
         MEDIUM("Medio", 16, 16, 40, 20, 36),
@@ -485,16 +492,21 @@ public class CatHunterBoard extends JPanel {
                 int y = r * cellSize + topOffset;
 
                 Cell cell = grid[r][c];
+                boolean alternate = (r + c) % 2 == 0;
 
                 if (!cell.isRevealed()) { // Si la celda no esta revelada, se dibuja gris.
-                    g.setColor(Color.GRAY);
+                    g.setColor(alternate ? HIDDEN_CELL_LIGHT : HIDDEN_CELL_DARK);
                     g.fillRect(x, y, cellSize, cellSize);
 
                     if (cell.isFlagged()) { // Si tiene bandera, se dibuja una F roja.
                         g.drawImage(yarnImage, x + 4, y + 4, cellSize - 8, cellSize - 8, null);
                     }
                 } else {
-                    g.setColor(Color.LIGHT_GRAY);
+                    if (cell.hasMine()) {
+                        g.setColor(CAT_CELL_BACKGROUND);
+                    } else {
+                        g.setColor(alternate ? REVEALED_CELL_LIGHT : REVEALED_CELL_DARK);
+                    }
                     g.fillRect(x, y, cellSize, cellSize);
 
                     if (cell.hasMine()) { // Si tiene mina, se dibuja un circulo.
@@ -504,7 +516,7 @@ public class CatHunterBoard extends JPanel {
                     }
                 }
 
-                g.setColor(Color.DARK_GRAY); // Se dibujan las lineas del tablero.
+                g.setColor(GRID_COLOR); // Se dibujan las lineas del tablero.
                 g.drawRect(x, y, cellSize, cellSize); // Dibuja el borde de cada celda.
             }
         }
