@@ -89,6 +89,13 @@ public class CatHunterIntro extends JPanel {
         difficultySelector.setFont(new Font("Arial", Font.PLAIN, 16));
         difficultySelector.setFocusable(false);
 
+        JCheckBox eventsCheckBox = new JCheckBox("Eventos gatunos");
+        eventsCheckBox.setSelected(true);
+        eventsCheckBox.setOpaque(false);
+        eventsCheckBox.setForeground(TEXT_COLOR);
+        eventsCheckBox.setFont(new Font("Arial", Font.BOLD, 16));
+        eventsCheckBox.setFocusPainted(false);
+
         JButton startButton = new JButton("Entrar en la casa");
         startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         startButton.setFont(new Font("Arial", Font.BOLD, 20));
@@ -99,12 +106,18 @@ public class CatHunterIntro extends JPanel {
         startButton.addActionListener(e -> {
             CatHunterBoard.Difficulty selectedDifficulty =
                 (CatHunterBoard.Difficulty) difficultySelector.getSelectedItem();
-            CatHunterBoard board = new CatHunterBoard(selectedDifficulty, playerName, Main.createReturnButton(window));
+            CatHunterBoard board = new CatHunterBoard(
+                selectedDifficulty,
+                playerName,
+                Main.createReturnButton(window),
+                eventsCheckBox.isSelected()
+            );
             Main.showGameWithoutMenuBar(window, board);
         });
 
         optionsPanel.add(difficultyLabel);
         optionsPanel.add(difficultySelector);
+        optionsPanel.add(eventsCheckBox);
 
         content.add(title);
         content.add(Box.createVerticalStrut(8));
