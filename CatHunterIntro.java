@@ -40,16 +40,33 @@ public class CatHunterIntro extends JPanel {
             ya sera demasiado tarde."""
         );
 
+        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        optionsPanel.setBackground(Color.BLACK);
+
+        JLabel difficultyLabel = new JLabel("Dificultad:");
+        difficultyLabel.setForeground(Color.WHITE);
+        difficultyLabel.setFont(new Font("Arial", Font.BOLD, 16));
+
+        JComboBox<CatHunterBoard.Difficulty> difficultySelector = new JComboBox<>(CatHunterBoard.Difficulty.values());
+        difficultySelector.setSelectedItem(CatHunterBoard.Difficulty.EASY);
+        difficultySelector.setFont(new Font("Arial", Font.PLAIN, 16));
+
         JButton startButton = new JButton("Comenzar");
         startButton.setFont(new Font("Arial", Font.BOLD, 20));
         startButton.addActionListener(e -> {
             // Al hacer clic en Comenzar, se muestra el panel del juego.
-            CatHunterBoard board = new CatHunterBoard(CatHunterBoard.Difficulty.EASY, playerName, Main.createReturnButton(window));
+            CatHunterBoard.Difficulty selectedDifficulty =
+                (CatHunterBoard.Difficulty) difficultySelector.getSelectedItem();
+            CatHunterBoard board = new CatHunterBoard(selectedDifficulty, playerName, Main.createReturnButton(window));
             Main.showGameWithoutMenuBar(window, board);
         });
 
         JPanel bottom = new JPanel();
         bottom.setBackground(Color.BLACK);
+        bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
+        optionsPanel.add(difficultyLabel);
+        optionsPanel.add(difficultySelector);
+        bottom.add(optionsPanel);
         bottom.add(startButton);
 
         add(playerLabel, BorderLayout.NORTH);

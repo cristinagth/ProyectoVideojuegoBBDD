@@ -1,8 +1,5 @@
 package ProyectoVideojuegoBBDD;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -10,104 +7,141 @@ import java.sql.Statement;
 
 public final class DatabaseManager {
 
-    private static final String DB_DIRECTORY = "data";
-    private static final String DB_FILE_NAME = "proyecto_videojuego.db";
-    private static final String JDBC_PREFIX = "jdbc:sqlite:";
+    private static final String DEFAULT_AZURE_SQL_SERVER = "proyectovideojuegoserver-pedro";
+    private static final String DEFAULT_AZURE_SQL_DATABASE = "ProyectoVideojuegoBBDD";
+    private static final String DEFAULT_AZURE_SQL_USER = "azureadmin";
 
     private DatabaseManager() {
     }
 
     /**
-     * Prepara la base de datos local para que la aplicacion pueda usarla.
-     * Crea la carpeta `data/` y las tablas si todavia no existen.
+     * Prepara la base de datos online de Azure SQL Database.
+     * Crea las tablas del proyecto si todavia no existen.
      */
     public static void initializeDatabase() {
-        try {
-            Files.createDirectories(getDatabasePath().getParent());
-
-            try (Connection connection = getConnection();
-                 Statement statement = connection.createStatement()) {
-                statement.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS jugador (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                        "nombre TEXT NOT NULL UNIQUE, " +
-                        "fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP" +
-                    ")"
-                );
-
-                statement.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS configuracion (" +
-                        "clave TEXT PRIMARY KEY, " +
-                        "valor TEXT NOT NULL" +
-                    ")"
-                );
-
-                statement.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS partida_cathunter (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                        "jugador_id INTEGER NOT NULL, " +
-                        "dificultad TEXT NOT NULL, " +
-                        "filas INTEGER NOT NULL, " +
-                        "columnas INTEGER NOT NULL, " +
-                        "minas INTEGER NOT NULL, " +
-                        "banderas_usadas INTEGER NOT NULL, " +
-                        "duracion_segundos INTEGER NOT NULL, " +
-                        "ganada INTEGER NOT NULL, " +
-                        "estado_tablero TEXT NOT NULL, " +
-                        "fecha_partida TEXT DEFAULT CURRENT_TIMESTAMP, " +
-                        "FOREIGN KEY (jugador_id) REFERENCES jugador(id)" +
-                    ")"
-                );
-
-                statement.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS partida_ajedrez (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                        "jugador_blancas_id INTEGER, " +
-                        "jugador_negras_id INTEGER, " +
-                        "turno_actual TEXT NOT NULL, " +
-                        "estado_tablero TEXT NOT NULL, " +
-                        "resultado TEXT, " +
-                        "fecha_guardado TEXT DEFAULT CURRENT_TIMESTAMP, " +
-                        "FOREIGN KEY (jugador_blancas_id) REFERENCES jugador(id), " +
-                        "FOREIGN KEY (jugador_negras_id) REFERENCES jugador(id)" +
-                    ")"
-                );
-            }
+        try (Connection connection = getConnection();
+             Statement statement = connection.createStatement()) {
+            createAzureTables(statement);
         } catch (Exception exception) {
             showDatabaseWarning(exception);
         }
     }
 
     /**
-     * Abre una conexion JDBC contra el fichero SQLite local.
+     * Abre una conexion JDBC contra Azure SQL Database.
      * Cada metodo que consulte o escriba datos debe cerrar su conexion al terminar.
      */
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(JDBC_PREFIX + getDatabasePath());
+        return DriverManager.getConnection(getAzureJdbcUrl());
+    }
+
+    private static String getAzureJdbcUrl() {
+        String customUrl = getConfigValue("db.url", "DB_URL", null);
+        if (customUrl != null && !customUrl.isBlank()) {
+            return customUrl;
+        }
+
+        String server = getConfigValue("azure.sql.server", "AZURE_SQL_SERVER", DEFAULT_AZURE_SQL_SERVER);
+        String database = getConfigValue("azure.sql.database", "AZURE_SQL_DATABASE", DEFAULT_AZURE_SQL_DATABASE);
+        String user = getConfigValue("azure.sql.user", "AZURE_SQL_USER", DEFAULT_AZURE_SQL_USER);
+        String password = getRequiredConfigValue("azure.sql.password", "AZURE_SQL_PASSWORD");
+        String azureUser = user.contains("@") ? user : user + "@" + server;
+
+        return "jdbc:sqlserver://" + server + ".database.windows.net:1433;" +
+            "database=" + database + ";" +
+            "user=" + azureUser + ";" +
+            "password=" + password + ";" +
+            "encrypt=true;" +
+            "trustServerCertificate=false;" +
+            "hostNameInCertificate=*.database.windows.net;" +
+            "loginTimeout=30;";
+    }
+
+    private static String getConfigValue(String propertyName, String environmentName, String defaultValue) {
+        String propertyValue = System.getProperty(propertyName);
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return propertyValue;
+        }
+
+        String environmentValue = System.getenv(environmentName);
+        if (environmentValue != null && !environmentValue.isBlank()) {
+            return environmentValue;
+        }
+
+        return defaultValue;
+    }
+
+    private static String getRequiredConfigValue(String propertyName, String environmentName) {
+        String value = getConfigValue(propertyName, environmentName, null);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(
+                "Falta configurar " + environmentName + " o la propiedad -D" + propertyName
+            );
+        }
+        return value;
+    }
+
+    private static void createAzureTables(Statement statement) throws SQLException {
+        statement.executeUpdate(
+            "IF OBJECT_ID('jugador', 'U') IS NULL " +
+                "CREATE TABLE jugador (" +
+                    "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                    "nombre NVARCHAR(100) NOT NULL UNIQUE, " +
+                    "fecha_creacion DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()" +
+                ")"
+        );
+
+        statement.executeUpdate(
+            "IF OBJECT_ID('configuracion', 'U') IS NULL " +
+                "CREATE TABLE configuracion (" +
+                    "clave NVARCHAR(100) PRIMARY KEY, " +
+                    "valor NVARCHAR(500) NOT NULL" +
+                ")"
+        );
+
+        statement.executeUpdate(
+            "IF OBJECT_ID('partida_cathunter', 'U') IS NULL " +
+                "CREATE TABLE partida_cathunter (" +
+                    "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                    "jugador_id INT NOT NULL, " +
+                    "dificultad NVARCHAR(30) NOT NULL, " +
+                    "filas INT NOT NULL, " +
+                    "columnas INT NOT NULL, " +
+                    "minas INT NOT NULL, " +
+                    "banderas_usadas INT NOT NULL, " +
+                    "duracion_segundos INT NOT NULL, " +
+                    "ganada BIT NOT NULL, " +
+                    "estado_tablero NVARCHAR(MAX) NOT NULL, " +
+                    "fecha_partida DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " +
+                    "CONSTRAINT FK_partida_cathunter_jugador " +
+                        "FOREIGN KEY (jugador_id) REFERENCES jugador(id)" +
+                ")"
+        );
+
+        statement.executeUpdate(
+            "IF OBJECT_ID('partida_ajedrez', 'U') IS NULL " +
+                "CREATE TABLE partida_ajedrez (" +
+                    "id INT IDENTITY(1,1) PRIMARY KEY, " +
+                    "jugador_blancas_id INT NULL, " +
+                    "jugador_negras_id INT NULL, " +
+                    "turno_actual NVARCHAR(30) NOT NULL, " +
+                    "estado_tablero NVARCHAR(MAX) NOT NULL, " +
+                    "resultado NVARCHAR(50) NULL, " +
+                    "fecha_guardado DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(), " +
+                    "CONSTRAINT FK_partida_ajedrez_blancas " +
+                        "FOREIGN KEY (jugador_blancas_id) REFERENCES jugador(id), " +
+                    "CONSTRAINT FK_partida_ajedrez_negras " +
+                        "FOREIGN KEY (jugador_negras_id) REFERENCES jugador(id)" +
+                ")"
+        );
     }
 
     /**
-     * Devuelve la ruta absoluta del fichero de base de datos.
-     * Se usa para mostrar o documentar donde se guardan los datos locales.
-     */
-    public static String getDatabaseFilePath() {
-        return getDatabasePath().toString();
-    }
-
-    /**
-     * Construye la ruta del fichero SQLite usando la carpeta `data/`.
-     * La ruta se calcula como absoluta para evitar dudas segun desde donde se ejecute la app.
-     */
-    private static Path getDatabasePath() {
-        return Paths.get(DB_DIRECTORY, DB_FILE_NAME).toAbsolutePath();
-    }
-
-    /**
-     * Muestra un aviso no bloqueante si SQLite no esta disponible.
-     * Esto permite que la aplicacion siga abriendo aunque falte el driver JDBC.
+     * Muestra un aviso no bloqueante si Azure SQL no esta disponible.
+     * Esto permite que la aplicacion siga abriendo y deje claro que falta configurar la conexion.
      */
     private static void showDatabaseWarning(Exception exception) {
-        System.err.println("No se ha podido acceder a la base de datos: " + exception.getMessage());
-        System.err.println("Comprueba que el driver JDBC de SQLite este en el classpath.");
+        System.err.println("No se ha podido acceder a Azure SQL Database: " + exception.getMessage());
+        System.err.println("Comprueba AZURE_SQL_PASSWORD y el driver JDBC de SQL Server en el classpath.");
     }
 }
