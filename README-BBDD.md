@@ -46,3 +46,9 @@ Tablas principales:
 - `configuracion`
 - `partida_cathunter`
 - `partida_ajedrez`
+
+## Persistencia implementada
+
+- Buscagatos guarda el resultado de la partida al ganar o perder.
+- Ajedrez guarda la partida al finalizar por jaque mate.
+- El historial de ajedrez se puede consultar desde el boton `Historial` del panel superior.
