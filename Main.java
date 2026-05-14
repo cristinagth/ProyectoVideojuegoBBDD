@@ -188,10 +188,6 @@ public class Main {
         return returnButton;
     }
 
-    private static JPanel createReturnPanel(JFrame window, String infoText, Runnable resetAction) {
-        return createReturnPanel(window, infoText, resetAction, null, null);
-    }
-
     private static JPanel createReturnPanel(
         JFrame window,
         String infoText,
