@@ -1,6 +1,7 @@
 package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
+import java.net.URL;
 import javax.swing.*;
 
 public class Main {
@@ -16,6 +17,7 @@ public class Main {
         DatabaseManager.initializeDatabase();
 
         JFrame window = new JFrame("Proyecto Videojuego");
+        setWindowIcon(window);
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setSize(800, 800);
         window.setLayout(new BorderLayout());
@@ -23,6 +25,18 @@ public class Main {
         showMenu(window);
 
         window.setVisible(true);
+    }
+
+    private static void setWindowIcon(JFrame window) {
+        URL iconUrl = Main.class.getResource("/ProyectoVideojuego.png");
+
+        if (iconUrl == null) {
+            iconUrl = Main.class.getResource("/ProyectoVideojuegoBBDD/ProyectoVideojuego.png");
+        }
+
+        if (iconUrl != null) {
+            window.setIconImage(new ImageIcon(iconUrl).getImage());
+        }
     }
 
     private static JButton createButton(String text) { // Metodo para crear botones con estilo uniforme
@@ -119,7 +133,9 @@ public class Main {
                 window,
                 board,
                 "Blancas: " + whitePlayer + " | Negras: " + blackPlayer,
-                board::resetGame
+                board::resetGame,
+                "Historial",
+                board::showHistoryDialog
             );
             window.revalidate();
             window.repaint();
@@ -153,8 +169,19 @@ public class Main {
     }
 
     public static void showGame(JFrame window, JPanel gamePanel, String infoText, Runnable resetAction) {
+        showGame(window, gamePanel, infoText, resetAction, null, null);
+    }
+
+    public static void showGame(
+        JFrame window,
+        JPanel gamePanel,
+        String infoText,
+        Runnable resetAction,
+        String extraActionText,
+        Runnable extraAction
+    ) {
         JPanel screen = new JPanel(new BorderLayout());
-        screen.add(createReturnPanel(window, infoText, resetAction), BorderLayout.NORTH);
+        screen.add(createReturnPanel(window, infoText, resetAction, extraActionText, extraAction), BorderLayout.NORTH);
         screen.add(gamePanel, BorderLayout.CENTER);
 
         window.getContentPane().removeAll();
@@ -175,7 +202,13 @@ public class Main {
         return returnButton;
     }
 
-    private static JPanel createReturnPanel(JFrame window, String infoText, Runnable resetAction) {
+    private static JPanel createReturnPanel(
+        JFrame window,
+        String infoText,
+        Runnable resetAction,
+        String extraActionText,
+        Runnable extraAction
+    ) {
         JPanel topPanel = new JPanel(new BorderLayout(10, 5));
         topPanel.setBackground(Color.DARK_GRAY);
         topPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
@@ -191,6 +224,12 @@ public class Main {
             JButton resetButton = new JButton("Reiniciar");
             resetButton.addActionListener(e -> resetAction.run());
             buttonPanel.add(resetButton);
+        }
+
+        if (extraActionText != null && extraAction != null) {
+            JButton extraButton = new JButton(extraActionText);
+            extraButton.addActionListener(e -> extraAction.run());
+            buttonPanel.add(extraButton);
         }
 
         buttonPanel.add(createReturnButton(window));

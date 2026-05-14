@@ -6,6 +6,9 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -22,6 +25,9 @@ public class CatHunterBoard extends JPanel {
     private static final Color EVENT_NEGATIVE = new Color(132, 75, 80, 230);
     private static final Color EVENT_NEUTRAL = new Color(55, 76, 86, 230);
     private static final Color EVENT_BORDER = new Color(242, 203, 110, 210);
+    private static final int EVENT_INTERVAL_MS = 30000;
+    private static final int EVENT_PROBABILITY_PERCENT = 50;
+    private static final int MAX_EVENT_LOG_LINES = 2;
 
     public enum Difficulty {
         EASY("Facil", 8, 8, 10, 10, 60),
@@ -52,6 +58,7 @@ public class CatHunterBoard extends JPanel {
 
     private final String playerName;
     private final Difficulty difficulty;
+    private final boolean eventsEnabled;
     private int rows, cols, mines;
     private Cell[][] grid;
     private int cellSize = 30;
@@ -59,9 +66,11 @@ public class CatHunterBoard extends JPanel {
     private boolean gameOver = false; // Variable para controlar si el juego ha terminado.
     private int flagsUsed = 0;
     private int remainingSeconds;
+    private int elapsedSeconds = 0;
     private Timer gameTimer;
     private Timer eventTimer;
     private Timer eventMessageTimer;
+    private Timer pauseResumeTimer;
     private boolean timerPaused = false;
     private String eventTitle = "";
     private String eventMessage = "";
@@ -69,11 +78,15 @@ public class CatHunterBoard extends JPanel {
     private String gameOverTitle = "";
     private String gameOverMessage = "";
     private Color gameOverColor = EVENT_NEUTRAL;
+    private boolean gameSaved = false;
+    private final List<String> eventLog = new ArrayList<>();
     private final Random random = new Random();
     private JButton resetButton;
     private JButton menuButton;
+    private JButton rankingButton;
     private JLabel infoLabel;
-    private int topOffset = 40;
+    private int topOffset = 64;
+    private int bottomLogHeight = 128;
     private final BufferedImage catImage;
     private final BufferedImage yarnImage;
 
@@ -86,8 +99,13 @@ public class CatHunterBoard extends JPanel {
     }
 
     public CatHunterBoard(Difficulty difficulty, String playerName, JButton menuButton) {
+        this(difficulty, playerName, menuButton, true);
+    }
+
+    public CatHunterBoard(Difficulty difficulty, String playerName, JButton menuButton, boolean eventsEnabled) {
         this.menuButton = menuButton;
         this.difficulty = difficulty;
+        this.eventsEnabled = eventsEnabled;
         this.playerName = normalizePlayerName(playerName);
         this.catImage = loadImage("gato.png");
         this.yarnImage = loadImage("Ovillo.png");
@@ -98,7 +116,7 @@ public class CatHunterBoard extends JPanel {
         this.cellSize = difficulty.cellSize;
         this.remainingSeconds = difficulty.timeLimitMinutes * 60;
 
-        setPreferredSize(new Dimension(cols * cellSize, rows * cellSize + topOffset)); // Tamano del panel segun el numero de celdas.
+        setPreferredSize(new Dimension(cols * cellSize, rows * cellSize + topOffset + bottomLogHeight)); // Tamano del panel segun el numero de celdas.
         setLayout(new BorderLayout());
         add(createTopPanel(), BorderLayout.NORTH);
         initBoard();
@@ -106,7 +124,8 @@ public class CatHunterBoard extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                int c = e.getX() / cellSize; // Columna clickeada.
+                int boardX = getBoardXOffset();
+                int c = (e.getX() - boardX) / cellSize; // Columna clickeada.
                 int r = (e.getY() - topOffset) / cellSize; // Fila clickeada ajustada por el panel superior.
 
                 if (!isInside(r, c) || gameOver) {
@@ -120,6 +139,7 @@ public class CatHunterBoard extends JPanel {
                         placeMines(r, c);
                         calculateNumbers();
                         firstClick = false;
+                        showEventMessage("La casa despierta", "Los gatos ya han encontrado sus escondites.", EVENT_NEUTRAL);
                     }
                     reveal(r, c);
                 }
@@ -140,6 +160,10 @@ public class CatHunterBoard extends JPanel {
 
     private boolean isInside(int r, int c) { // Metodo para verificar si una celda esta dentro de los limites del tablero.
         return r >= 0 && r < rows && c >= 0 && c < cols;
+    }
+
+    private int getBoardXOffset() {
+        return Math.max(0, (getWidth() - cols * cellSize) / 2);
     }
 
     // Coloca minas en el tablero asegurando que la primera casilla y sus alrededores esten libres.
@@ -194,7 +218,7 @@ public class CatHunterBoard extends JPanel {
         grid[r][c].setRevealed(true); // Revelar la celda actual.
 
         if (grid[r][c].hasMine()) { // Si la celda tiene una mina, el juego termina.
-            finishGame("Has perdido", "Te has encontrado un gato.", EVENT_NEGATIVE);
+            finishGame("Has perdido", "Te has encontrado un gato.", EVENT_NEGATIVE, false);
             return;
         }
 
@@ -229,8 +253,14 @@ public class CatHunterBoard extends JPanel {
         gameOver = false;
         flagsUsed = 0;
         timerPaused = false;
+        stopPauseResumeTimer();
+        elapsedSeconds = 0;
+        gameSaved = false;
         gameOverTitle = "";
         gameOverMessage = "";
+        eventTitle = "";
+        eventMessage = "";
+        eventLog.clear();
         remainingSeconds = difficulty.timeLimitMinutes * 60;
 
         initBoard();
@@ -252,25 +282,30 @@ public class CatHunterBoard extends JPanel {
         }
 
         if (unrevealed == mines) { // Si las celdas no reveladas coinciden con las minas, gana.
-            finishGame("Has ganado", "Encontraste todos los gatos.", EVENT_POSITIVE);
+            finishGame("Has ganado", "Encontraste todos los gatos.", EVENT_POSITIVE, true);
         }
     }
 
     private JPanel createTopPanel() { // Crea el panel superior con informacion del juego y boton de reinicio.
         JPanel top = new JPanel(new BorderLayout(10, 5));
         top.setBackground(Color.DARK_GRAY);
-        top.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        top.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        top.setPreferredSize(new Dimension(cols * cellSize, topOffset));
 
         infoLabel = new JLabel();
         infoLabel.setForeground(Color.WHITE);
-        infoLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        infoLabel.setFont(new Font("Arial", Font.BOLD, 14));
 
         resetButton = new JButton("Reiniciar");
         resetButton.addActionListener(e -> resetGame());
 
+        rankingButton = new JButton("Ranking");
+        rankingButton.addActionListener(e -> showRankingDialog());
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         buttonPanel.setOpaque(false);
         buttonPanel.add(resetButton);
+        buttonPanel.add(rankingButton);
         if (menuButton != null) {
             buttonPanel.add(menuButton);
         }
@@ -286,13 +321,56 @@ public class CatHunterBoard extends JPanel {
     private void updateInfo() { // Actualiza minas, banderas usadas y minas restantes.
         int remaining = mines - flagsUsed;
         infoLabel.setText(
-            "Jugador: " + playerName +
-                " | Dificultad: " + difficulty.displayName +
-                " | Tiempo: " + formatTime(remainingSeconds) +
+            "<html>" +
+                "Jugador: " + playerName + " | Dificultad: " + difficulty.displayName +
+                " | Eventos: " + (eventsEnabled ? "Si" : "No") +
+                "<br>" +
+                "Tiempo: " + formatTime(remainingSeconds) +
                 " | Minas: " + mines +
                 " | Banderas: " + flagsUsed +
-                " | Restantes: " + remaining
+                " | Restantes: " + remaining +
+            "</html>"
         );
+    }
+
+    private void showRankingDialog() {
+        try {
+            List<CatHunterRepository.RankingEntry> ranking = CatHunterRepository.getTopRanking(10);
+
+            if (ranking.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Todavia no hay partidas guardadas.", "Ranking CatHunter", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            String[] columns = {"#", "Jugador", "Dificultad", "Tiempo", "Resultado", "Fecha"};
+            Object[][] data = new Object[ranking.size()][columns.length];
+
+            for (int i = 0; i < ranking.size(); i++) {
+                CatHunterRepository.RankingEntry entry = ranking.get(i);
+                data[i][0] = i + 1;
+                data[i][1] = entry.getPlayerName();
+                data[i][2] = entry.getDifficulty();
+                data[i][3] = formatTime(entry.getDurationSeconds());
+                data[i][4] = entry.isWon() ? "Victoria" : "Derrota";
+                data[i][5] = entry.getDate();
+            }
+
+            JTable table = new JTable(data, columns);
+            table.setEnabled(false);
+            table.setRowHeight(24);
+            JScrollPane scrollPane = new JScrollPane(table);
+            scrollPane.setPreferredSize(new Dimension(650, 260));
+
+            JOptionPane.showMessageDialog(this, scrollPane, "Ranking CatHunter", JOptionPane.PLAIN_MESSAGE);
+        } catch (SQLException exception) {
+            JOptionPane.showMessageDialog(
+                this,
+                "No se pudo cargar el ranking desde Azure SQL.",
+                "Ranking CatHunter",
+                JOptionPane.ERROR_MESSAGE
+            );
+            System.err.println("No se pudo cargar el ranking de CatHunter: " + exception.getMessage());
+        }
     }
 
     private void startTimer() {
@@ -303,11 +381,12 @@ public class CatHunterBoard extends JPanel {
                 return;
             }
 
+            elapsedSeconds++;
             remainingSeconds--;
             updateInfo();
 
             if (remainingSeconds <= 0) {
-                finishGame("Se ha agotado el tiempo", "La casa vuelve a quedar en silencio.", EVENT_NEGATIVE);
+                finishGame("Se ha agotado el tiempo", "La casa vuelve a quedar en silencio.", EVENT_NEGATIVE, false);
             }
         });
         gameTimer.start();
@@ -315,7 +394,11 @@ public class CatHunterBoard extends JPanel {
 
     private void startEventTimer() {
         stopEventTimer();
-        eventTimer = new Timer(5000, e -> { // Cada 5 segundos, hay una posibilidad de que ocurra un evento aleatorio.
+        if (!eventsEnabled) {
+            return;
+        }
+
+        eventTimer = new Timer(EVENT_INTERVAL_MS, e -> {
             if (gameOver) {
                 stopEventTimer();
                 return;
@@ -325,9 +408,9 @@ public class CatHunterBoard extends JPanel {
                 return;
             }
 
-            // if (random.nextBoolean()) {
+            if (random.nextInt(100) < EVENT_PROBABILITY_PERCENT) {
                 triggerRandomEvent();
-            // }
+            }
         });
         eventTimer.start();
     }
@@ -346,7 +429,14 @@ public class CatHunterBoard extends JPanel {
         }
     }
 
-    private void finishGame(String title, String message, Color color) {
+    private void stopPauseResumeTimer() {
+        if (pauseResumeTimer != null) {
+            pauseResumeTimer.stop();
+            pauseResumeTimer = null;
+        }
+    }
+
+    private void finishGame(String title, String message, Color color, boolean won) {
         if (gameOver) {
             return;
         }
@@ -355,11 +445,75 @@ public class CatHunterBoard extends JPanel {
         stopTimer();
         stopEventTimer();
         timerPaused = false;
+        stopPauseResumeTimer();
         gameOverTitle = title;
         gameOverMessage = message;
         gameOverColor = color;
+        if (!won) {
+            revealAllCats();
+        }
+        saveFinishedGame(won);
         updateInfo();
         repaint();
+    }
+
+    private void revealAllCats() {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (grid[r][c].hasMine()) {
+                    grid[r][c].setRevealed(true);
+                }
+            }
+        }
+    }
+
+    private void saveFinishedGame(boolean won) {
+        if (gameSaved) {
+            return;
+        }
+
+        gameSaved = true;
+
+        try {
+            CatHunterRepository.saveGame(
+                playerName,
+                difficulty.displayName,
+                rows,
+                cols,
+                mines,
+                flagsUsed,
+                elapsedSeconds,
+                won,
+                serializeBoard()
+            );
+        } catch (SQLException exception) {
+            showEventMessage("Guardado fallido", "No se pudo guardar la partida en Azure SQL.", EVENT_NEGATIVE);
+            System.err.println("No se pudo guardar la partida de CatHunter: " + exception.getMessage());
+        }
+    }
+
+    private String serializeBoard() {
+        StringBuilder builder = new StringBuilder(rows * cols * 4);
+
+        for (int r = 0; r < rows; r++) {
+            if (r > 0) {
+                builder.append('/');
+            }
+
+            for (int c = 0; c < cols; c++) {
+                Cell cell = grid[r][c];
+                builder.append(cell.hasMine() ? 'M' : 'S');
+                builder.append(cell.isRevealed() ? 'R' : 'H');
+                builder.append(cell.isFlagged() ? 'F' : 'N');
+                builder.append(cell.getAdjacentMines());
+
+                if (c < cols - 1) {
+                    builder.append(',');
+                }
+            }
+        }
+
+        return builder.toString();
     }
 
     private void triggerRandomEvent() {
@@ -421,7 +575,7 @@ public class CatHunterBoard extends JPanel {
         updateInfo();
 
         if (remainingSeconds == 0) {
-            finishGame("Te has quedado sin tiempo", "Un gato ha tirado un reloj al suelo.", EVENT_NEGATIVE);
+            finishGame("Te has quedado sin tiempo", "Un gato ha tirado un reloj al suelo.", EVENT_NEGATIVE, false);
             return;
         }
 
@@ -465,15 +619,16 @@ public class CatHunterBoard extends JPanel {
         updateInfo();
         showEventMessage("Pausa felina", "El gato se duerme al sol. El tiempo se pausa durante 10 segundos.", EVENT_POSITIVE);
 
-        Timer pauseTimer = new Timer(10000, e -> {
+        stopPauseResumeTimer();
+        pauseResumeTimer = new Timer(10000, e -> {
             timerPaused = false;
             if (!gameOver) {
                 startTimer();
                 updateInfo();
             }
         });
-        pauseTimer.setRepeats(false);
-        pauseTimer.start();
+        pauseResumeTimer.setRepeats(false);
+        pauseResumeTimer.start();
     }
 
     private void removeWrongFlagEvent() {
@@ -578,6 +733,7 @@ public class CatHunterBoard extends JPanel {
         eventTitle = title;
         eventMessage = message;
         eventMessageColor = color;
+        addEventLog(title + ": " + message);
 
         if (eventMessageTimer != null) {
             eventMessageTimer.stop();
@@ -591,6 +747,14 @@ public class CatHunterBoard extends JPanel {
         eventMessageTimer.setRepeats(false);
         eventMessageTimer.start();
         repaint();
+    }
+
+    private void addEventLog(String message) {
+        eventLog.add(0, message);
+
+        while (eventLog.size() > MAX_EVENT_LOG_LINES) {
+            eventLog.remove(eventLog.size() - 1);
+        }
     }
 
     private String formatTime(int seconds) {
@@ -634,9 +798,11 @@ public class CatHunterBoard extends JPanel {
     protected void paintComponent(Graphics g) { // Metodo para dibujar el tablero y las celdas.
         super.paintComponent(g);
 
+        int boardX = getBoardXOffset();
+
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                int x = c * cellSize;
+                int x = boardX + c * cellSize;
                 int y = r * cellSize + topOffset;
 
                 Cell cell = grid[r][c];
@@ -669,8 +835,85 @@ public class CatHunterBoard extends JPanel {
             }
         }
 
+        drawBottomLogArea(g);
         drawEventBanner(g);
+        drawEventLog(g);
         drawGameOverOverlay(g);
+    }
+
+    private void drawBottomLogArea(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        int y = topOffset + rows * cellSize;
+
+        g2.setColor(new Color(18, 29, 33));
+        g2.fillRect(0, y, getWidth(), bottomLogHeight);
+        g2.setColor(new Color(31, 42, 46));
+        g2.drawLine(0, y, getWidth(), y);
+        g2.dispose();
+    }
+
+    private void drawEventLog(Graphics g) {
+        if (eventLog.isEmpty()) {
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int panelWidth = Math.min(getWidth() - 36, 680);
+        int lineHeight = 15;
+        int panelHeight = bottomLogHeight - 16;
+        int x = (getWidth() - panelWidth) / 2;
+        int y = topOffset + rows * cellSize + 8;
+
+        g2.setColor(new Color(18, 29, 33, 205));
+        g2.fillRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+        g2.setColor(new Color(242, 203, 110, 120));
+        g2.drawRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+
+        g2.setFont(new Font("Arial", Font.BOLD, 12));
+        g2.setColor(EVENT_BORDER);
+        g2.drawString("ULTIMOS EVENTOS", x + 12, y + 20);
+
+        g2.setFont(new Font("Arial", Font.PLAIN, 12));
+        g2.setColor(Color.WHITE);
+        int currentY = y + 40;
+
+        for (int i = 0; i < eventLog.size(); i++) {
+            currentY = drawLogEntry(g2, eventLog.get(i), x + 12, currentY, panelWidth - 24, lineHeight);
+            currentY += 5;
+
+            if (currentY > y + panelHeight - 8) {
+                break;
+            }
+        }
+
+        g2.dispose();
+    }
+
+    private int drawLogEntry(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight) {
+        FontMetrics metrics = g2.getFontMetrics();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        int currentY = y;
+
+        for (String word : words) {
+            String candidate = line.length() == 0 ? word : line + " " + word;
+
+            if (metrics.stringWidth(candidate) > maxWidth && line.length() > 0) {
+                g2.drawString(line.toString(), x, currentY);
+                line = new StringBuilder(word);
+                currentY += lineHeight;
+            } else {
+                line = new StringBuilder(candidate);
+            }
+        }
+
+        if (line.length() > 0) {
+            g2.drawString(line.toString(), x, currentY);
+        }
+
+        return currentY + lineHeight;
     }
 
     private void drawGameOverOverlay(Graphics g) {
@@ -709,7 +952,7 @@ public class CatHunterBoard extends JPanel {
         int messageX = x + (panelWidth - messageMetrics.stringWidth(gameOverMessage)) / 2;
         g2.drawString(gameOverMessage, messageX, y + 98);
 
-        String instruction = "Usa Reiniciar o Volver al menu para continuar";
+        String instruction = "Usa Ranking, Reiniciar o Volver al menu para continuar";
         g2.setFont(new Font("Arial", Font.BOLD, 14));
         FontMetrics instructionMetrics = g2.getFontMetrics();
         int instructionX = x + (panelWidth - instructionMetrics.stringWidth(instruction)) / 2;
@@ -825,6 +1068,7 @@ public class CatHunterBoard extends JPanel {
     public void removeNotify() {
         stopTimer();
         stopEventTimer();
+        stopPauseResumeTimer();
         if (eventMessageTimer != null) {
             eventMessageTimer.stop();
             eventMessageTimer = null;

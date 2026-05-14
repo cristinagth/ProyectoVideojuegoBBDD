@@ -24,6 +24,7 @@ Cada partida tiene un limite de tiempo segun la dificultad.
 - Si llega a `00:00`, la partida termina en derrota.
 - Al reiniciar la partida, el tiempo vuelve al limite original de la dificultad.
 - El temporizador se detiene al ganar, perder o volver al menu.
+- Al finalizar la partida, el resultado se guarda en Azure SQL Database.
 
 ## Sistema de eventos
 
@@ -35,6 +36,8 @@ Funcionamiento previsto:
 - La probabilidad normal es del 50%.
 - Los eventos empiezan despues del primer clic, cuando ya se han colocado los gatos.
 - Los eventos se muestran como una banda flotante integrada en el tablero, sin pausar la partida.
+- Se mantiene un log visual con los ultimos eventos ocurridos.
+- Los eventos se pueden desactivar desde la pantalla de introduccion.
 
 Eventos implementados:
 
@@ -49,6 +52,29 @@ Eventos implementados:
 | Un gato curioso empuja un ovillo mal colocado | Positivo | Quita una bandera incorrecta. |
 | Un gato escurridizo cambia de escondite | Negativo | Mueve un gato oculto a otra casilla oculta y recalcula los numeros. |
 | Evento narrativo | Neutro | Muestra ambientacion sin alterar la partida. |
+
+## Ranking
+
+El panel superior del juego incluye un boton `Ranking`.
+
+El ranking consulta las partidas guardadas en Azure SQL Database y muestra:
+
+- posicion
+- jugador
+- dificultad
+- duracion
+- resultado
+- fecha
+
+Al finalizar una partida, la pantalla de resultado recuerda que se puede consultar el ranking desde el panel superior.
+
+## Final de partida
+
+Los finales de partida se muestran como una capa visual integrada en el tablero.
+
+- Victoria: fondo verdoso.
+- Derrota: fondo rojizo.
+- Al perder, se revelan todos los gatos del tablero.
 
 ## Archivos principales
 

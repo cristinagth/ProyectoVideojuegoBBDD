@@ -35,7 +35,7 @@ CREATE TABLE partida_ajedrez (
     jugador_negras_id INT NULL,
     turno_actual NVARCHAR(30) NOT NULL,
     estado_tablero NVARCHAR(MAX) NOT NULL,
-    resultado NVARCHAR(50) NULL,
+    resultado NVARCHAR(200) NULL,
     fecha_guardado DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
     CONSTRAINT FK_partida_ajedrez_blancas
         FOREIGN KEY (jugador_blancas_id) REFERENCES jugador(id),
