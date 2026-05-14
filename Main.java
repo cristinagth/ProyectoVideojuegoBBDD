@@ -1,6 +1,7 @@
 package ProyectoVideojuegoBBDD;
 
 import java.awt.*;
+import java.net.URL;
 import javax.swing.*;
 
 public class Main {
@@ -16,6 +17,7 @@ public class Main {
         DatabaseManager.initializeDatabase();
 
         JFrame window = new JFrame("Proyecto Videojuego");
+        setWindowIcon(window);
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setSize(800, 800);
         window.setLayout(new BorderLayout());
@@ -23,6 +25,18 @@ public class Main {
         showMenu(window);
 
         window.setVisible(true);
+    }
+
+    private static void setWindowIcon(JFrame window) {
+        URL iconUrl = Main.class.getResource("/ProyectoVideojuego.png");
+
+        if (iconUrl == null) {
+            iconUrl = Main.class.getResource("/ProyectoVideojuegoBBDD/ProyectoVideojuego.png");
+        }
+
+        if (iconUrl != null) {
+            window.setIconImage(new ImageIcon(iconUrl).getImage());
+        }
     }
 
     private static JButton createButton(String text) { // Metodo para crear botones con estilo uniforme
