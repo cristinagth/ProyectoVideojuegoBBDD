@@ -350,7 +350,7 @@ public class CatHunterBoard extends JPanel {
         int remaining = mines - flagsUsed;
         infoLabel.setText(
             "<html>" +
-                "Jugador: " + playerName + " | Dificultad: " + difficulty.displayName +
+                "Jugador: " + escapeHtml(playerName) + " | Dificultad: " + difficulty.displayName +
                 " | Eventos: " + (eventsEnabled ? "Si" : "No") +
                 "<br>" +
                 "Tiempo: " + formatTime(remainingSeconds) +
@@ -359,6 +359,19 @@ public class CatHunterBoard extends JPanel {
                 " | Restantes: " + remaining +
             "</html>"
         );
+    }
+
+    private String escapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+
+        return text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     private void showRankingDialog() {
