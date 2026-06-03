@@ -18,10 +18,10 @@ public class Board extends JPanel {
     private static final Color MOVE_HIGHLIGHT = new Color(246, 211, 91, 115);
     private static final Color CAPTURE_HIGHLIGHT = new Color(205, 55, 55, 150);
     private static final Color SELECTED_BORDER = new Color(242, 203, 110);
+    private static final int COLUMNS = 8;
+    private static final int ROWS = 8;
+    private static final int SQUARE_SIZE = 80;
 
-    int columns = 8;
-    int rows = 8;    // Tamano del tablero en filas.
-    int squareSize = 80;
     private List<Chesspiece> pieces;
     private Chesspiece selectedPiece;
     private List<Point> highlightedSquares = new ArrayList<>();
@@ -65,7 +65,7 @@ public class Board extends JPanel {
         pieces.add(new Bishop(7, 5, true));
         pieces.add(new Knight(7, 6, true));
         pieces.add(new Rook(7, 7, true));
-        for (int i = 0; i < columns; i++) {
+        for (int i = 0; i < COLUMNS; i++) {
             pieces.add(new Pawn(6, i, true));
         }
 
@@ -78,7 +78,7 @@ public class Board extends JPanel {
         pieces.add(new Bishop(0, 5, false));
         pieces.add(new Knight(0, 6, false));
         pieces.add(new Rook(0, 7, false));
-        for (int i = 0; i < columns; i++) {
+        for (int i = 0; i < COLUMNS; i++) {
             pieces.add(new Pawn(1, i, false));
         }
     }
@@ -194,7 +194,7 @@ public class Board extends JPanel {
     }
 
     public boolean isInsideBoard(int row, int col) {
-        return row >= 0 && row < rows && col >= 0 && col < columns;
+        return row >= 0 && row < ROWS && col >= 0 && col < COLUMNS;
     }
 
     public boolean isEmpty(int row, int col) {
@@ -206,11 +206,11 @@ public class Board extends JPanel {
     }
 
     private int getBoardWidthPx() {
-        return columns * squareSize;
+        return COLUMNS * SQUARE_SIZE;
     }
 
     private int getBoardHeightPx() {
-        return rows * squareSize;
+        return ROWS * SQUARE_SIZE;
     }
 
     private int getXOffset() {
@@ -258,8 +258,8 @@ public class Board extends JPanel {
             repaint();
             return;
         }
-        int col = (mouseX - xOffset) / squareSize;
-        int row = (mouseY - yOffset) / squareSize;
+        int col = (mouseX - xOffset) / SQUARE_SIZE;
+        int row = (mouseY - yOffset) / SQUARE_SIZE;
 
         Chesspiece clicked = getPieceAt(row, col);
         // Si tenemos una pieza seleccionada, intentamos moverla.
@@ -347,7 +347,7 @@ public class Board extends JPanel {
             return;
         }
 
-        if ((piece.isWhite() && piece.getRow() == 0) || (!piece.isWhite() && piece.getRow() == rows - 1)) {
+        if ((piece.isWhite() && piece.getRow() == 0) || (!piece.isWhite() && piece.getRow() == ROWS - 1)) {
             pieces.remove(piece);
             pieces.add(new Queen(piece.getRow(), piece.getCol(), piece.isWhite()));
             String player = piece.isWhite() ? whitePlayerName : blackPlayerName;
@@ -377,8 +377,6 @@ public class Board extends JPanel {
             return;
         }
 
-        gameSaved = true;
-
         try {
             ChessRepository.saveGame(
                 whitePlayerName,
@@ -387,6 +385,7 @@ public class Board extends JPanel {
                 serializeBoard(),
                 result
             );
+            gameSaved = true;
         } catch (SQLException exception) {
             showStatus("No se pudo guardar la partida de ajedrez en Azure SQL.", new Color(145, 65, 65, 220));
             System.err.println("No se pudo guardar la partida de ajedrez: " + exception.getMessage());
@@ -466,8 +465,8 @@ public class Board extends JPanel {
         Graphics2D base = (Graphics2D) g;
         base.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int boardWidth = columns * squareSize;
-        int boardHeight = rows * squareSize;
+        int boardWidth = COLUMNS * SQUARE_SIZE;
+        int boardHeight = ROWS * SQUARE_SIZE;
         int xOffset = (getWidth() - boardWidth) / 2;
         int yOffset = getYOffset();
         String letters = "ABCDEFGH";
@@ -481,10 +480,10 @@ public class Board extends JPanel {
         base.fillRoundRect(xOffset - 28, yOffset - 28, boardWidth + 56, boardHeight + 56, 18, 18);
 
         // Dibujar el tablero.
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < columns; col++) {
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLUMNS; col++) {
                 g.setColor((row + col) % 2 == 0 ? LIGHT_SQUARE : DARK_SQUARE);
-                g.fillRect(xOffset + col * squareSize, yOffset + row * squareSize, squareSize, squareSize);
+                g.fillRect(xOffset + col * SQUARE_SIZE, yOffset + row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
             }
         }
 
@@ -497,8 +496,8 @@ public class Board extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
             for (Point p : highlightedSquares) {
-                int hx = xOffset + p.x * squareSize;
-                int hy = yOffset + p.y * squareSize;
+                int hx = xOffset + p.x * SQUARE_SIZE;
+                int hy = yOffset + p.y * SQUARE_SIZE;
                 Chesspiece target = getPieceAt(p.y, p.x);
 
                 if (target != null && selectedPiece != null && target.isWhite() != selectedPiece.isWhite()) {
@@ -507,39 +506,39 @@ public class Board extends JPanel {
                     g2.setColor(MOVE_HIGHLIGHT);
                 }
 
-                g2.fillRect(hx, hy, squareSize, squareSize);
+                g2.fillRect(hx, hy, SQUARE_SIZE, SQUARE_SIZE);
             }
 
             if (selectedPiece != null) {
                 g2.setColor(SELECTED_BORDER);
-                int sx = xOffset + selectedPiece.getCol() * squareSize;
-                int sy = yOffset + selectedPiece.getRow() * squareSize;
+                int sx = xOffset + selectedPiece.getCol() * SQUARE_SIZE;
+                int sy = yOffset + selectedPiece.getRow() * SQUARE_SIZE;
                 g2.setStroke(new BasicStroke(4));
-                g2.drawRoundRect(sx + 4, sy + 4, squareSize - 8, squareSize - 8, 10, 10);
+                g2.drawRoundRect(sx + 4, sy + 4, SQUARE_SIZE - 8, SQUARE_SIZE - 8, 10, 10);
             }
             g2.dispose();
         }
 
         g.setFont(new Font("Arial", Font.BOLD, 16));
         // Letras superiores e inferiores.
-        for (int i = 0; i < columns; i++) {
+        for (int i = 0; i < COLUMNS; i++) {
             g.setColor(COORDINATE_COLOR);
-            g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * squareSize + squareSize / 2 - 5, yOffset - 10);
-            g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * squareSize + squareSize / 2 - 5, yOffset + boardHeight + 20);
+            g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * SQUARE_SIZE + SQUARE_SIZE / 2 - 5, yOffset - 10);
+            g.drawString(String.valueOf(letters.charAt(i)), xOffset + i * SQUARE_SIZE + SQUARE_SIZE / 2 - 5, yOffset + boardHeight + 20);
         }
 
         // Numeros laterales.
-        for (int i = 0; i < rows; i++) {
+        for (int i = 0; i < ROWS; i++) {
             g.setColor(COORDINATE_COLOR);
-            g.drawString(String.valueOf(8 - i), xOffset - 20, yOffset + i * squareSize + squareSize / 2 + 5);
-            g.drawString(String.valueOf(8 - i), xOffset + boardWidth + 10, yOffset + i * squareSize + squareSize / 2 + 5);
+            g.drawString(String.valueOf(8 - i), xOffset - 20, yOffset + i * SQUARE_SIZE + SQUARE_SIZE / 2 + 5);
+            g.drawString(String.valueOf(8 - i), xOffset + boardWidth + 10, yOffset + i * SQUARE_SIZE + SQUARE_SIZE / 2 + 5);
         }
 
         // Dibujar las piezas.
         for (Chesspiece piece : pieces) {
-            int px = xOffset + piece.getCol() * squareSize;
-            int py = yOffset + piece.getRow() * squareSize;
-            piece.draw(g, px, py, squareSize);
+            int px = xOffset + piece.getCol() * SQUARE_SIZE;
+            int py = yOffset + piece.getRow() * SQUARE_SIZE;
+            piece.draw(g, px, py, SQUARE_SIZE);
         }
 
         drawStatusMessage(g, xOffset, yOffset, boardWidth);

@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,8 +20,8 @@ public final class ChessRepository {
         String result
     ) throws SQLException {
         try (Connection connection = DatabaseManager.getConnection()) {
-            int whitePlayerId = findOrCreatePlayer(connection, whitePlayerName);
-            int blackPlayerId = findOrCreatePlayer(connection, blackPlayerName);
+            int whitePlayerId = PlayerRepository.findOrCreatePlayer(connection, whitePlayerName);
+            int blackPlayerId = PlayerRepository.findOrCreatePlayer(connection, blackPlayerName);
 
             String sql =
                 "INSERT INTO partida_ajedrez " +
@@ -69,44 +68,6 @@ public final class ChessRepository {
         }
 
         return history;
-    }
-
-    private static int findOrCreatePlayer(Connection connection, String playerName) throws SQLException {
-        String normalizedName = normalizePlayerName(playerName);
-
-        try (PreparedStatement statement = connection.prepareStatement("SELECT id FROM jugador WHERE nombre = ?")) {
-            statement.setString(1, normalizedName);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getInt("id");
-                }
-            }
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(
-            "INSERT INTO jugador (nombre) VALUES (?)",
-            Statement.RETURN_GENERATED_KEYS
-        )) {
-            statement.setString(1, normalizedName);
-            statement.executeUpdate();
-
-            try (ResultSet keys = statement.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getInt(1);
-                }
-            }
-        }
-
-        throw new SQLException("No se pudo crear el jugador de ajedrez: " + normalizedName);
-    }
-
-    private static String normalizePlayerName(String playerName) {
-        if (playerName == null || playerName.trim().isEmpty()) {
-            return "Jugador";
-        }
-
-        return playerName.trim();
     }
 
     public static final class HistoryEntry {
