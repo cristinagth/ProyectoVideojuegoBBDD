@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -215,17 +216,44 @@ public class CatHunterBoard extends JPanel {
             return;
         }
 
-        grid[r][c].setRevealed(true); // Revelar la celda actual.
-
         if (grid[r][c].hasMine()) { // Si la celda tiene una mina, el juego termina.
+            grid[r][c].setRevealed(true);
             finishGame("Has perdido", "Te has encontrado un gato.", EVENT_NEGATIVE, false);
             return;
         }
 
-        if (grid[r][c].getAdjacentMines() == 0) { // Si no tiene minas alrededor, revelar las celdas vecinas.
+        ArrayDeque<Point> pendingCells = new ArrayDeque<>();
+        pendingCells.add(new Point(r, c));
+
+        while (!pendingCells.isEmpty()) {
+            Point current = pendingCells.removeFirst();
+            Cell cell = grid[current.x][current.y];
+
+            if (cell.isRevealed() || cell.isFlagged()) {
+                continue;
+            }
+
+            cell.setRevealed(true);
+
+            if (cell.getAdjacentMines() != 0) {
+                continue;
+            }
+
             for (int dr = -1; dr <= 1; dr++) {
                 for (int dc = -1; dc <= 1; dc++) {
-                    reveal(r + dr, c + dc);
+                    if (dr == 0 && dc == 0) {
+                        continue;
+                    }
+
+                    int nextRow = current.x + dr;
+                    int nextCol = current.y + dc;
+
+                    if (isInside(nextRow, nextCol)
+                            && !grid[nextRow][nextCol].isRevealed()
+                            && !grid[nextRow][nextCol].isFlagged()
+                            && !grid[nextRow][nextCol].hasMine()) {
+                        pendingCells.add(new Point(nextRow, nextCol));
+                    }
                 }
             }
         }
