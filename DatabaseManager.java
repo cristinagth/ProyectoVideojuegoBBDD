@@ -1,15 +1,19 @@
 package ProyectoVideojuegoBBDD;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 public final class DatabaseManager {
 
-    private static final String DEFAULT_AZURE_SQL_SERVER = "proyectovideojuegoserver-pedro";
-    private static final String DEFAULT_AZURE_SQL_DATABASE = "ProyectoVideojuegoBBDD";
-    private static final String DEFAULT_AZURE_SQL_USER = "azureadmin";
+    private static final String LOCAL_DATABASE_CONFIG_FILE = "database.properties";
+    private static Properties localDatabaseConfig;
 
     private DatabaseManager() {
     }
@@ -41,9 +45,9 @@ public final class DatabaseManager {
             return customUrl;
         }
 
-        String server = getConfigValue("azure.sql.server", "AZURE_SQL_SERVER", DEFAULT_AZURE_SQL_SERVER);
-        String database = getConfigValue("azure.sql.database", "AZURE_SQL_DATABASE", DEFAULT_AZURE_SQL_DATABASE);
-        String user = getConfigValue("azure.sql.user", "AZURE_SQL_USER", DEFAULT_AZURE_SQL_USER);
+        String server = getRequiredConfigValue("azure.sql.server", "AZURE_SQL_SERVER");
+        String database = getRequiredConfigValue("azure.sql.database", "AZURE_SQL_DATABASE");
+        String user = getRequiredConfigValue("azure.sql.user", "AZURE_SQL_USER");
         String password = getRequiredConfigValue("azure.sql.password", "AZURE_SQL_PASSWORD");
         String azureUser = user.contains("@") ? user : user + "@" + server;
 
@@ -68,7 +72,44 @@ public final class DatabaseManager {
             return environmentValue;
         }
 
+        String localValue = getLocalDatabaseConfig().getProperty(propertyName);
+        if (localValue != null && !localValue.isBlank()) {
+            return localValue;
+        }
+
         return defaultValue;
+    }
+
+    private static Properties getLocalDatabaseConfig() {
+        if (localDatabaseConfig == null) {
+            localDatabaseConfig = loadLocalDatabaseConfig();
+        }
+
+        return localDatabaseConfig;
+    }
+
+    private static Properties loadLocalDatabaseConfig() {
+        Properties properties = new Properties();
+
+        Path[] possiblePaths = {
+            Path.of(LOCAL_DATABASE_CONFIG_FILE),
+            Path.of("ProyectoVideojuegoBBDD", LOCAL_DATABASE_CONFIG_FILE)
+        };
+
+        for (Path path : possiblePaths) {
+            if (!Files.isRegularFile(path)) {
+                continue;
+            }
+
+            try (InputStream inputStream = Files.newInputStream(path)) {
+                properties.load(inputStream);
+                return properties;
+            } catch (IOException exception) {
+                System.err.println("No se pudo leer " + path + ": " + exception.getMessage());
+            }
+        }
+
+        return properties;
     }
 
     private static String getRequiredConfigValue(String propertyName, String environmentName) {

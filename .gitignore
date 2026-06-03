@@ -23,6 +23,7 @@ lib/
 # Configuracion local con secretos
 .env.azure.local
 .env.local
+database.properties
 
 # IDEs
 .vscode/
