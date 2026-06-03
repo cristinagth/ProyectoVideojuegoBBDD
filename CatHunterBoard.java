@@ -500,8 +500,6 @@ public class CatHunterBoard extends JPanel {
             return;
         }
 
-        gameSaved = true;
-
         try {
             CatHunterRepository.saveGame(
                 playerName,
@@ -514,6 +512,7 @@ public class CatHunterBoard extends JPanel {
                 won,
                 serializeBoard()
             );
+            gameSaved = true;
         } catch (SQLException exception) {
             showEventMessage("Guardado fallido", "No se pudo guardar la partida en Azure SQL.", EVENT_NEGATIVE);
             System.err.println("No se pudo guardar la partida de CatHunter: " + exception.getMessage());

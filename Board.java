@@ -377,8 +377,6 @@ public class Board extends JPanel {
             return;
         }
 
-        gameSaved = true;
-
         try {
             ChessRepository.saveGame(
                 whitePlayerName,
@@ -387,6 +385,7 @@ public class Board extends JPanel {
                 serializeBoard(),
                 result
             );
+            gameSaved = true;
         } catch (SQLException exception) {
             showStatus("No se pudo guardar la partida de ajedrez en Azure SQL.", new Color(145, 65, 65, 220));
             System.err.println("No se pudo guardar la partida de ajedrez: " + exception.getMessage());
